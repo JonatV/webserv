@@ -1,4 +1,4 @@
-#include "../../includes/server/ConnectingSocket.hpp"
+#include "../../../includes/networking/sockets/ConnectingSocket.hpp"
 
 //Constructor
 http::ConnectingSocket::ConnectingSocket(int domain, int service, int protocol, int port, unsigned long interface)

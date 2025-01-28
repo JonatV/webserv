@@ -1,4 +1,4 @@
-#include "../../includes/server/BindingSocket.hpp"
+#include "../../../includes/networking/sockets/BindingSocket.hpp"
 
 //Constructor
 http::BindingSocket::BindingSocket(int domain, int service, int protocol, int port, unsigned long interface) 

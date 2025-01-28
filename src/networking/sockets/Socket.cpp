@@ -1,4 +1,4 @@
-#include "../../includes/server/socket.hpp"
+#include "../../../includes/networking/sockets/Socket.hpp"
 
 //Constructor
 http::Socket::Socket(int domain, int service, int protocol, int port, unsigned long interface) {
