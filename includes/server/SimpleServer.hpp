@@ -1,6 +1,8 @@
 #ifndef SimpleServer_hpp
 #define SimpleServer_hpp
 
+#include <sstream>
+#include <fstream>
 #include "../networking/sockets/AllSockets.hpp"
 
 namespace http {
