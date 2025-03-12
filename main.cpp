@@ -2,6 +2,6 @@
 
 int main() 
 {
-    http::TestServer test;
+    http::Server test;
     return 0;
 }

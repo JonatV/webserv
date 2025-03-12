@@ -1,20 +1,22 @@
-#ifndef TestServer_hpp
-#define TestServer_hpp
+#ifndef SERVER_HPP
+#define SERVER_HPP
 
 #include "SimpleServer.hpp"
+#include "PollHandler.hpp"
 
 namespace http {
-    class TestServer : public SimpleServer {
+    class Server : public SimpleServer {
         public :
-            TestServer();
+            Server();
             void launch();
         private :
             char buffer[30000];
             int newSocket;
+            PollHandler pollHandler;
             
             void accepter();
             void handler();
-            void responder();
+            void responder(int clientSocket);
     };
 }
 

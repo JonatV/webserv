@@ -1,8 +1,9 @@
-#ifndef Networkinglib_hpp
-#define Networkinglib_hpp
+#ifndef NETWORKINGLIB_HPP
+#define NETWORKINGLIB_HPP
 
 #include <iostream>
 #include "networking/sockets/AllSockets.hpp"
-#include "server/TestServer.hpp"
+#include "server/Server.hpp"
+#include "server/PollHandler.hpp"
 
 #endif

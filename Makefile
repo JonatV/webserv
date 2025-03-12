@@ -6,9 +6,10 @@ SOCKETS = src/networking/sockets/Socket.cpp \
 		src/networking/sockets/ConnectingSocket.cpp \
 		src/networking/sockets/ListeningSocket.cpp \
 		src/networking/sockets/BindingSocket.cpp \
+		src//server/PollHandler.cpp
 
 SERVER = src/server/SimpleServer.cpp \
-		src/server/TestServer.cpp \
+		src/server/Server.cpp \
 
 OBJS = $(FILES:.cpp=.o)
 
