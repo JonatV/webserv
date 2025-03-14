@@ -1,5 +1,5 @@
 CXX = c++
-CXXFLAGS = -std=c++98 -Werror -Wextra -Wall #-Wpedantic
+CXXFLAGS = -std=c++98 -Werror -Wextra -Wall
 NAME = webserv
 FILES = main.cpp
 SOCKETS = src/networking/sockets/Socket.cpp \
@@ -11,12 +11,14 @@ SOCKETS = src/networking/sockets/Socket.cpp \
 SERVER = src/server/SimpleServer.cpp \
 		src/server/Server.cpp \
 
+PARSING = src/parsing/Parsing.cpp
+
 OBJS = $(FILES:.cpp=.o)
 
 all: $(NAME)
 
 $(NAME): $(OBJS)
-		$(CXX) $(CXXFLAGS) $(SERVER) $(SOCKETS) $(FILES) -o $(NAME)
+		$(CXX) $(CXXFLAGS) $(SERVER) $(SOCKETS) $(PARSING) $(FILES) -o $(NAME)
 
 src/%.o: %.cpp
 		$(CXX) $(CXXFLAGS) -c $<

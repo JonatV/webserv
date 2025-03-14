@@ -1,4 +1,5 @@
 #include "../../../includes/networking/sockets/Socket.hpp"
+#include <iostream>
 
 //Constructor
 http::Socket::Socket(int domain, int service, int protocol, int port, unsigned long interface) {
@@ -9,6 +10,7 @@ http::Socket::Socket(int domain, int service, int protocol, int port, unsigned l
 
     //Establishing socket
     sock = socket(domain, service, protocol);
+    std::cout << "--- Creating socket: " << sock << std::endl;
     testConnection(sock);
 }
 

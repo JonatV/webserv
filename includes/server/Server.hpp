@@ -14,9 +14,11 @@ namespace http {
             int newSocket;
             PollHandler pollHandler;
             
-            void accepter();
+            int accepter();
             void handler();
             void responder(int clientSocket);
+            std::string getContentType(const std::string& filePath);
+            void notFound(int clientSocket);
     };
 }
 

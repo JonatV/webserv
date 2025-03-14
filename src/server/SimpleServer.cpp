@@ -7,3 +7,7 @@ http::SimpleServer::SimpleServer(int domain, int service, int protocol, int port
 http::ListeningSocket * http::SimpleServer::getListeningSocket() {
     return socket;
 }
+
+int http::SimpleServer::accepter() {
+    return 0;
+}

@@ -4,73 +4,118 @@ http::Server::Server() : SimpleServer(AF_INET, SOCK_STREAM, 0, 2121, INADDR_ANY,
     launch();
 }
 
-void http::Server::accepter() {
+int http::Server::accepter() {
     struct sockaddr_in address = getListeningSocket()->getAddress();
     int addrlen = sizeof(address);
     newSocket = accept(getListeningSocket()->getSock(),
         (struct sockaddr *)&address, (socklen_t *)&addrlen);
-    
+    (void)addrlen;
+
     if (newSocket >= 0) {
-        std::cout << "New connection accepted: " << newSocket << std::endl;
+        std::cout << "--- New connection accepted: " << newSocket << std::endl;
         pollHandler.addSocket(newSocket);
-    } else {
-        std::cerr << "Failed to accept connection: " << strerror(errno) << std::endl;
     }
+    else {
+        std::cerr << "--- Failed to accept connection: " << strerror(errno) << std::endl;
+        return 1;
+    }
+    return 0;
 }
 
 void http::Server::handler() {
     int ret = pollHandler.pollSockets();
+
     if (ret > 0) {
         for (int i = 0; i < pollHandler.getNumFds(); i++) {
             if (pollHandler.getRevents(i) & POLLIN) {
                 int clientSocket = pollHandler.getPollfd()[i].fd;
-                std::cout << "Handling data from socket: " << clientSocket << std::endl;
-                read(clientSocket, buffer, 30000);
-                responder(clientSocket);
-                pollHandler.removeSocket(clientSocket);
+                std::cout << "--- Handling data from socket: " << clientSocket << std::endl;
+                memset(buffer, 0, sizeof(buffer));
+                int bytesRead = read(clientSocket, buffer, sizeof(buffer) - 1);
+                if (bytesRead > 0) {
+                    responder(clientSocket);
+                }
+                else if (bytesRead == 0) {
+                    std::cout << "--- Client disconnected: " << clientSocket << std::endl;
+                    pollHandler.removeSocket(clientSocket);
+                    close(clientSocket);
+                }
+                else
+                    std::cerr << "--- Read error: " << strerror(errno) << std::endl;
             }
         }
-    } else if (ret < 0) {
-        std::cerr << "Poll error: " << strerror(errno) << std::endl;
     }
+    else if (ret < 0)
+        std::cerr << "--- Poll error: " << strerror(errno) << std::endl;
+}
+
+void http::Server::notFound(int clientSocket) {
+    std::ifstream notFoundFile("./config/content/www/404error.html");
+            if (notFoundFile.is_open()) {
+                std::stringstream buffer;
+                buffer << notFoundFile.rdbuf();
+                std::string fileContent = buffer.str();
+                std::string response = 
+                    "HTTP/1.1 404 Not Found\r\n"
+                    "Content-Type: text/html\r\n"
+                    "Content-Length: " + std::to_string(fileContent.length()) + "\r\n"
+                    "\r\n" + fileContent;
+                write(clientSocket, response.c_str(), response.length());
+            }
 }
 
 void http::Server::responder(int clientSocket) {
+    std::cout << "--- Responding to client..." << std::endl;
+    std::cout << buffer << std::endl;
     std::string request(buffer);
-    std::string filePath = "./content/index.html";
+    std::string filePath;
 
-    if (request.find("GET /index.html") != std::string::npos) {
-        filePath = "./content/index.html";
+    if (request.find("GET / ") != std::string::npos) {
+        filePath = "./config/content/www/index.html";
     }
 
-    std::ifstream file(filePath);
-    if (file.is_open()) {
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        std::string htmlContent = buffer.str();
-        std::string response = 
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/html\r\n"
-            "Content-Length: " + std::to_string(htmlContent.length()) + "\r\n"
-            "\r\n" + htmlContent;
-        write(clientSocket, response.c_str(), response.length());
-    } else {
-        const char *notFoundContent = 
-            "HTTP/1.1 404 Not Found\r\n"
-            "Content-Type: text/html\r\n"
-            "Content-Length: 45\r\n"
-            "\r\n"
-            "<html><body><h1>404 Not Found</h1></body></html>";
-        write(clientSocket, notFoundContent, strlen(notFoundContent));
+    else if (request.find("GET /404error.html")) {
+        filePath = "./config/content/www/404error.html";
+    }
+
+    if (!filePath.empty()) {
+        std::ifstream file(filePath);
+        if (file.is_open()) {
+            std::stringstream buffer;
+            buffer << file.rdbuf();
+            std::string fileContent = buffer.str();
+            std::string response = 
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: " + getContentType(filePath) + "\r\n"
+                "Content-Length: " + std::to_string(fileContent.length()) + "\r\n"
+                "\r\n" + fileContent;
+            write(clientSocket, response.c_str(), response.length());
+        }
+        else {
+            notFound(clientSocket);
+        }
+    } 
+    else {
+        notFound(clientSocket);
     }
     close(clientSocket);
 }
 
+std::string http::Server::getContentType(const std::string& filePath) {
+    if (filePath.find(".html") != std::string::npos)
+        return "text/html";
+
+    return "text/plain";
+}
+
 void http::Server::launch() {
     while (true) {
-        std::cout << "Waiting for connections..." << std::endl;
-        accepter();
+        std::cout << "--- Waiting for connections..." << std::endl;
+        if (accepter() != 0) {
+            std::cerr << "--- Error accepting connection." << std::endl;
+            break;
+        }
         handler();
-        std::cout << "Done handling connections." << std::endl;
+        std::cout << "--- Done handling connections.\n" << std::endl;
     }
 }

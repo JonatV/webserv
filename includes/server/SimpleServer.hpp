@@ -13,7 +13,7 @@ namespace http {
             ListeningSocket *getListeningSocket();
         private :
             ListeningSocket *socket;
-            virtual void accepter() = 0;
+            virtual int accepter();
             virtual void handler() = 0;
             virtual void responder(int newSocket) = 0;
     };

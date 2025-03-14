@@ -1,4 +1,5 @@
 #include "../../../includes/networking/sockets/ListeningSocket.hpp"
+#include <iostream>
 
 
 http::ListeningSocket::ListeningSocket(int domain, int service, int protocol, int port, unsigned long interface, int bklog)
@@ -9,6 +10,7 @@ http::ListeningSocket::ListeningSocket(int domain, int service, int protocol, in
 }
 
 void http::ListeningSocket::startListening() {
+    std::cout << "--- Listening on socket: " << getSock() << std::endl;
     listening = listen(getSock(), backlog);
 }
 
