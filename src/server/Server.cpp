@@ -1,4 +1,5 @@
 #include "../../includes/server/Server.hpp"
+#include "../../includes/tools/stringManipulation.hpp"
 
 http::Server::Server() : SimpleServer(AF_INET, SOCK_STREAM, 0, 2121, INADDR_ANY, 10) {
     launch();
@@ -58,7 +59,7 @@ void http::Server::notFound(int clientSocket) {
                 std::string response = 
                     "HTTP/1.1 404 Not Found\r\n"
                     "Content-Type: text/html\r\n"
-                    "Content-Length: " + std::to_string(fileContent.length()) + "\r\n"
+                    "Content-Length: " + to_string(fileContent.length()) + "\r\n"
                     "\r\n" + fileContent;
                 write(clientSocket, response.c_str(), response.length());
             }
@@ -87,7 +88,7 @@ void http::Server::responder(int clientSocket) {
             std::string response = 
                 "HTTP/1.1 200 OK\r\n"
                 "Content-Type: " + getContentType(filePath) + "\r\n"
-                "Content-Length: " + std::to_string(fileContent.length()) + "\r\n"
+                "Content-Length: " + to_string(fileContent.length()) + "\r\n"
                 "\r\n" + fileContent;
             write(clientSocket, response.c_str(), response.length());
         }
