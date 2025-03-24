@@ -6,7 +6,7 @@ SOCKETS = src/networking/sockets/Socket.cpp \
 		src/networking/sockets/ConnectingSocket.cpp \
 		src/networking/sockets/ListeningSocket.cpp \
 		src/networking/sockets/BindingSocket.cpp \
-		src//server/PollHandler.cpp
+		src/server/PollHandler.cpp
 
 SERVER = src/server/SimpleServer.cpp \
 		src/server/Server.cpp \
@@ -31,4 +31,4 @@ re: clean all
 fclean : clean 
 		rm -f $(NAME)
 
-.PHONY: all clean%
+.PHONY: all clean fclean re
