@@ -79,7 +79,7 @@ void http::Server::responder(int clientSocket) {
     }
 
     if (!filePath.empty()) {
-        std::ifstream file(filePath);
+        std::ifstream file(filePath.c_str());
         if (file.is_open()) {
             std::stringstream buffer;
             buffer << file.rdbuf();

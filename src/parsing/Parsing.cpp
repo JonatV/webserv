@@ -96,7 +96,7 @@ void parseHttpBlock(std::ifstream &path) {
 }
 
 int readConfig(std::string configPath) {
-    std::ifstream path(configPath);
+    std::ifstream path(configPath.c_str());
     if (!path.is_open()) {
         std::cerr << "Error: Unable to open config file." << std::endl;
         return 1;
