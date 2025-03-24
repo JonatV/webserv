@@ -1,34 +1,25 @@
 CXX = c++
-CXXFLAGS = -std=c++98 -Werror -Wextra -Wall
+CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 NAME = webserv
-FILES = main.cpp
-SOCKETS = src/networking/sockets/Socket.cpp \
-		src/networking/sockets/ConnectingSocket.cpp \
-		src/networking/sockets/ListeningSocket.cpp \
-		src/networking/sockets/BindingSocket.cpp \
-		src/server/PollHandler.cpp
 
-SERVER = src/server/SimpleServer.cpp \
-		src/server/Server.cpp \
+SRCS = $(shell find . -name "*.cpp" -type f | sed 's|./||')
+OBJS = $(SRCS:.cpp=.o)
 
-PARSING = src/parsing/Parsing.cpp
-
-OBJS = $(FILES:.cpp=.o)
+.PHONY: all clean fclean re
 
 all: $(NAME)
 
 $(NAME): $(OBJS)
-		$(CXX) $(CXXFLAGS) $(SERVER) $(SOCKETS) $(PARSING) $(FILES) -o $(NAME)
+	$(CXX) $(CXXFLAGS) -o $(NAME) $(OBJS)
 
-src/%.o: %.cpp
-		$(CXX) $(CXXFLAGS) -c $<
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-		rm -f $(OBJS)
+	rm -rf $(OBJS)
 
-re: clean all
+fclean: clean
+	rm -f $(NAME)
 
-fclean : clean 
-		rm -f $(NAME)
+re: fclean all
 
-.PHONY: all clean fclean re
