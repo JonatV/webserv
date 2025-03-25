@@ -52,17 +52,25 @@ void http::Server::handler() {
 
 void http::Server::notFound(int clientSocket) {
     std::ifstream notFoundFile("./config/content/www/404error.html");
-            if (notFoundFile.is_open()) {
-                std::stringstream buffer;
-                buffer << notFoundFile.rdbuf();
-                std::string fileContent = buffer.str();
-                std::string response = 
-                    "HTTP/1.1 404 Not Found\r\n"
-                    "Content-Type: text/html\r\n"
-                    "Content-Length: " + to_string(fileContent.length()) + "\r\n"
-                    "\r\n" + fileContent;
-                write(clientSocket, response.c_str(), response.length());
-            }
+    
+    if (notFoundFile.is_open()) {
+        std::stringstream buffer;
+        buffer << notFoundFile.rdbuf();
+        std::string fileContent = buffer.str();
+        std::string response = 
+            "HTTP/1.1 404 Not Found\r\n"
+            "Content-Type: text/html\r\n"
+            "Content-Length: " + to_string(fileContent.length()) + "\r\n"
+            "\r\n" + fileContent;
+        write(clientSocket, response.c_str(), response.length());
+    } else {
+        std::string response = 
+            "HTTP/1.1 404 Not Found\r\n"
+            "Content-Type: text/html\r\n"
+            "Content-Length: 0\r\n"
+            "\r\n";
+        write(clientSocket, response.c_str(), response.length());
+    }
 }
 
 void http::Server::responder(int clientSocket) {
@@ -73,14 +81,14 @@ void http::Server::responder(int clientSocket) {
 
     if (request.find("GET / ") != std::string::npos) {
         filePath = "./config/content/www/index.html";
-    }
-
-    else if (request.find("GET /404error.html")) {
+    } else if (request.find("GET /404error.html") != std::string::npos) {
         filePath = "./config/content/www/404error.html";
+    } else {
+        filePath = "";
     }
 
     if (!filePath.empty()) {
-        std::ifstream file(filePath.c_str());
+        std::ifstream file(filePath);
         if (file.is_open()) {
             std::stringstream buffer;
             buffer << file.rdbuf();
@@ -91,12 +99,10 @@ void http::Server::responder(int clientSocket) {
                 "Content-Length: " + to_string(fileContent.length()) + "\r\n"
                 "\r\n" + fileContent;
             write(clientSocket, response.c_str(), response.length());
-        }
-        else {
+        } else {
             notFound(clientSocket);
         }
-    } 
-    else {
+    } else {
         notFound(clientSocket);
     }
     close(clientSocket);
