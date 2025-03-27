@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:12 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/03/27 17:03:58 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/03/27 17:07:28 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,8 @@ class LocationConfig {
 		bool	_autoindex;
 
 	public:
-
+		LocationConfig();
+		~LocationConfig();
 };
 
 #endif
