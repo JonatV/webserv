@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:12 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/03/28 17:02:19 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/03/28 17:13:33 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,7 +35,7 @@ class LocationConfig {
 		LocationConfig();
 		~LocationConfig();
 
-		// Different possible errors from the lcoation part of the config file
+		// Different possible errors from the location part of the config file
 		enum e_error {
 			ERROR_NONE,
 
