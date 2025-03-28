@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/24 18:47:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/03/25 15:29:21 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/03/27 16:34:55 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,12 @@
 class Configuration {
 	private:
 		void	parsConfigFile(std::string configFile);
+		int		_port;
+		std::string	_mimeTypes;
+		std::string	_defaultType;
+		int		_keepAliveTimeout;
+		std::string	_serverName;
+
 	
 	public:
 		Configuration();
