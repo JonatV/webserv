@@ -6,10 +6,11 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/28 14:07:17 by jveirman          #+#    #+#             */
-/*   Updated: 2025/03/29 22:24:12 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/03/30 00:42:51 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "method.hpp"
 #include <iostream>
 #include <string>
 #include <cctype>
@@ -103,77 +104,79 @@ int main(int ac, char const *av[])
 		char clientIP[INET_ADDRSTRLEN];
 		inet_ntop(AF_INET, &clientSocket.sin_addr, clientIP, INET_ADDRSTRLEN);
 		std::cout << "Client connected: " << clientIP << ":" << ntohs(clientSocket.sin_port) << std::endl;
-		// receive the request
-		char buffer[2048];
-		ssize_t bytesReceived = recv(clientSocketFd, buffer, sizeof(buffer) - 1, 0);
-		if (bytesReceived == -1)
+		while (true)
 		{
-			std::cout << "Error: Can't receive data" << std::endl;
-			close(clientSocketFd);
-			continue;
+			// receive the requests
+			char buffer[2048];
+			ssize_t bytesReceived = recv(clientSocketFd, buffer, sizeof(buffer) - 1, 0);
+			if (bytesReceived == -1)
+			{
+				send(clientSocketFd, ERROR_500_RESPONSE.c_str(), ERROR_500_RESPONSE.size(), 0);
+				break;
+			}
+			if (bytesReceived == 0)
+			{
+				send(clientSocketFd, ERROR_400_RESPONSE.c_str(), ERROR_400_RESPONSE.size(), 0);
+				break;
+			}
+			if (bytesReceived > (ssize_t)sizeof(buffer))
+			{
+				send(clientSocketFd, ERROR_413_RESPONSE.c_str(), ERROR_413_RESPONSE.size(), 0);
+				break;
+			}
+			buffer[bytesReceived] = '\0'; // null-terminate the string
+			// print the request
+			std::cout << "\e[34m===========================" << std::endl;
+			std::cout << "Bytes received: " << bytesReceived << std::endl;
+			std::cout << "Buffer size: " << sizeof(buffer) << std::endl;
+			std::cout << "Buffer length: " << strlen(buffer) << std::endl;
+			std::cout << " Request content: \n" << buffer << std::endl;
+			std::cout << "===========================\e[0m" << std::endl;
+			// detect the type of request
+			std::string response;
+			std::string request(buffer);
+			if (request.find("Connection: close") != std::string::npos)
+			{
+				std::cout << "Client requested to close the connection" << std::endl;
+				break;
+			}
+			else if (request.find("GET") != std::string::npos)
+			{
+				std::cout << "GET request" << std::endl;
+				response = method::GET(request);
+			}
+			else if (request.find("POST") != std::string::npos)
+			{
+				std::cout << "POST request" << std::endl;
+			}
+			else if (request.find("DELETE") != std::string::npos)
+			{
+				std::cout << "DELETE request" << std::endl;
+			}
+			else
+			{
+				send(clientSocketFd, ERROR_405_RESPONSE.c_str(), ERROR_405_RESPONSE.size(), 0);
+				break;
+			}
+			// print the request type
+			// send the response
+			send(clientSocketFd, response.c_str(), response.size(), 0);
+			std::cout << "\e[35m===========================" << std::endl;
+			std::cout << "Bytes sent: " << response.size() << std::endl;
+			std::cout << "Response content: \n" << response << std::endl;
+			std::cout << "===========================\e[0m" << std::endl;
+			// the message is sent to the client. The first argument is the fd of the
+			// socket that is connected to the client. The second argument is the message
+			// to be sent. The third argument is the size of the message. The last argument
+			// is the flags. 0 means no flags. The message is sent in a single packet.
+			// The message is a simple HTTP response.
+			// The first line is the status line.
+			// The second line is the headers.
+			// The headers are separated by \r\n.
+			// The headers are not mandatory, but they are used to provide information about the response.
 		}
-		// check if the request is empty
-		if (bytesReceived == 0)
-		{
-			std::cout << "Error: Empty request" << std::endl;
-			close(clientSocketFd);
-			continue;
-		}
-		// check if the request is too big
-		if (bytesReceived > (ssize_t)sizeof(buffer))
-		{
-			std::cout << "Error: Request too big" << std::endl;
-			close(clientSocketFd);
-			continue;
-		}
-		buffer[bytesReceived] = '\0'; // null-terminate the string
-		// print the request
-		std::cout << "===========================" << std::endl;
-		std::cout << "Bytes received: " << bytesReceived << std::endl;
-		std::cout << "Buffer size: " << sizeof(buffer) << std::endl;
-		std::cout << "Buffer length: " << strlen(buffer) << std::endl;
-		std::cout << "Request content: \n" << buffer << std::endl;
-		std::cout << "===========================" << std::endl;
-		// detect the type of request
-		std::string request(buffer);
-		if (request.find("GET") != std::string::npos)
-		{
-			std::cout << "GET request" << std::endl;
-		}
-		else if (request.find("POST") != std::string::npos)
-		{
-			std::cout << "POST request" << std::endl;
-		}
-		else if (request.find("DELETE") != std::string::npos)
-		{
-			std::cout << "DELETE request" << std::endl;
-		}
-		else
-		{
-			std::cout << "Error: Unknown request type" << std::endl;
-			close(clientSocketFd);
-			continue;
-		}
-		// print the request type
-		// send the response
-
-		const char* response = 
-			"HTTP/1.1 200 OK\r\n"
-			"Content-Type: text/html\r\n"
-			"Content-Length: 101\r\n" // still need to be calculated
-			"\r\n"
-			"<html><body><h1>Client connected to server, full duplex communication established!</h1></body></html>";
-		send(clientSocketFd, response, strlen(response), 0);
-		std::cout << "Message sent" << std::endl;
-		// the message is sent to the client. The first argument is the fd of the
-		// socket that is connected to the client. The second argument is the message
-		// to be sent. The third argument is the size of the message. The last argument
-		// is the flags. 0 means no flags. The message is sent in a single packet.
-		// The message is a simple HTTP response.
-		// The first line is the status line.
-		// The second line is the headers.
-		// The headers are separated by \r\n.
-		// The headers are not mandatory, but they are used to provide information about the response.
+		std::cout << "Client socket disconnected" << std::endl;
+		close(clientSocketFd);
 	}
 
 	// ------------------------

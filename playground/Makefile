@@ -6,11 +6,11 @@
 #    By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/19 16:57:04 by jveirman          #+#    #+#              #
-#    Updated: 2025/03/28 14:11:13 by jveirman         ###   ########.fr        #
+#    Updated: 2025/03/29 23:37:48 by jveirman         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-SRCS = main.cpp
+SRCS = main.cpp method.cpp
 NAME = web
 CC = c++
 CFLAGS = -Wall -Wextra -Werror
