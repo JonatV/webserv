@@ -5,7 +5,10 @@
 #include <string>
 #include <fstream>
 
-#define MAX_PAYLOAD 100 // global that has to come from the parser
+#define PARSER_MAX_PAYLOAD 100 // global that has to come from the parser
+#define PARSER_GET_RIGHT 1
+#define PARSER_POST_RIGHT 1
+#define PARSER_DELETE_RIGHT 1
 
 const std::string ERROR_400_RESPONSE =
 	"HTTP/1.1 400 Bad Request\r\n"
@@ -13,6 +16,13 @@ const std::string ERROR_400_RESPONSE =
 	"Content-Length: 58\r\n"
 	"\r\n"
 	"<html><body><h1>400 Bad Request</h1><p>Invalid request.</p></body></html>";
+
+const std::string ERROR_403_RESPONSE =
+	"HTTP/1.1 403 Forbidden\r\n"
+	"Content-Type: text/html\r\n"
+	"Content-Length: 58\r\n"
+	"\r\n"
+	"<html><body><h1>403 Forbidden</h1><p>Access denied.</p></body></html>";
 
 const std::string ERROR_404_RESPONSE =
 	"HTTP/1.1 404 Not Found\r\n"
@@ -47,7 +57,7 @@ namespace method
 {
 	std::string GET(const std::string& request);
 	std::string POST(const std::string& request);
-	// std::string DELETE(const std::string& request);
+	std::string DELETE(const std::string& request);
 	
 	std::string foundPage(const std::string& filePath);
 	std::string error404Page();

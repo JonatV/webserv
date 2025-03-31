@@ -3,7 +3,7 @@
 
 std::string method::GET(const std::string& request)
 {
-	std::string	response;
+	if (!PARSER_GET_RIGHT) return (ERROR_403_RESPONSE);
 	std::string	filePath;
 
 	size_t start = request.find("GET") + 4; // 4 is to go after "GET "
@@ -65,7 +65,6 @@ std::string method::foundPage(const std::string& filepath)
 std::string method::error404Page()
 {
 	std::ifstream	file("./www/error_pages/404error.html");
-	std::string		notFoundResponse;
 
 	if (file.is_open())
 	{
@@ -98,7 +97,7 @@ std::string method::error404Page()
 // 3 send the response
 std::string method::POST(const std::string& request)
 {
-	std::string	response;
+	if (!PARSER_POST_RIGHT) return (ERROR_403_RESPONSE);
 	std::string	content;
 
 	size_t start = request.find("MSG_TEXTAREA=");
@@ -108,7 +107,7 @@ std::string method::POST(const std::string& request)
 	std::cout << "\e[30m" << content << std::endl;
 	ssize_t bytesReceived = content.length();
 	std::cout << "Bytes received: " << bytesReceived << "\e[0m" << std::endl;
-	if (bytesReceived > MAX_PAYLOAD)
+	if (bytesReceived > PARSER_MAX_PAYLOAD)
 		return (ERROR_413_RESPONSE);
 	std::string		fileName = "./www/tmp/" + to_string(time(0)) + ".txt";
 	while (std::ifstream(fileName.c_str()))
@@ -128,4 +127,38 @@ std::string method::POST(const std::string& request)
 	else
 		return (ERROR_500_RESPONSE);
 }
+
+std::string method::DELETE(const std::string& request)
+{
+	if (!PARSER_DELETE_RIGHT) return (ERROR_403_RESPONSE);
+	std::string filePath;
+
+	size_t start = request.find("DELETE") + 7;
+	if (start == std::string::npos)
+		return (ERROR_400_RESPONSE);
+	size_t end = request.find(" ", start);
+	if (end == std::string::npos)
+		return (ERROR_400_RESPONSE);
+	filePath = request.substr(start, end - start);
+	if (filePath.length() >= 5)
+	{
+		if (filePath.compare(0, 5, "/tmp/") != 0)
+			return (ERROR_403_RESPONSE);
+	}
+	else
+		return (ERROR_403_RESPONSE);
+	filePath = "./www" + filePath;
+	std::ifstream	file(filePath.c_str());
+	if (!file.is_open())
+		return (ERROR_404_RESPONSE);
+	file.close();
+	if (std::remove(filePath.c_str()) == 0)
+		return (
+			"HTTP/1.1 200 OK\r\n"
+			"Content-Type: text/html\r\n"
+			"Content-Length: 58\r\n"
+			"\r\n"
+			"<html><body><h1>200 OK</h1><p>File deleted.</p></body></html>");
+	else
+		return (ERROR_404_RESPONSE);
 }
