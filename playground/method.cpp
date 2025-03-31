@@ -39,17 +39,12 @@ std::string method::foundPage(const std::string& filepath)
 	if (file.is_open())
 	{
 		std::string	textType;
-		std::string	content = "";
-		std::string	line;
 		
-		while (std::getline(file, line))
-			content += line + "\n";
-		// remove the last newline character
-		if (!content.empty())
-			content.erase(content.length() - 1);
-		file.close();
+		if (filepath == "./www/delete.html")
+			return (generateDeletePage());
+		std::string	content = gnl(file);
 		if (filepath.find(".css") != std::string::npos)
-			textType = "css";
+		textType = "css";
 		else
 			textType = "html";
 		return (
@@ -68,14 +63,7 @@ std::string method::error404Page()
 
 	if (file.is_open())
 	{
-		std::string content = "";
-		std::string line;
-		while (std::getline(file, line))
-			content += line + "\n";
-		// remove the last newline character
-		if (!content.empty())
-			content.erase(content.length() - 1);
-		file.close();
+		std::string content = gnl(file);
 		return (
 			"HTTP/1.1 404 Not Found\r\n"
 			"Content-Type: text/html\r\n"
@@ -160,5 +148,114 @@ std::string method::DELETE(const std::string& request)
 			"\r\n"
 			"<html><body><h1>200 OK</h1><p>File deleted.</p></body></html>");
 	else
+		return (ERROR_500_RESPONSE);
+}
+
+std::vector<std::string> method::listFiles()
+{
+	std::vector<std::string> files;
+	DIR *dir;
+	struct dirent *current_entry;
+
+	dir = opendir("./www/tmp/");
+	if (dir)
+	{
+		std::cout << "\e[33mFiles in /www/tmp/: " << std::endl;
+		while ((current_entry = readdir(dir)))
+		{
+			if (current_entry->d_type == DT_REG && strcmp(current_entry->d_name, ".") != 0)
+			{
+				files.push_back(current_entry->d_name);
+				std::cout << "\e[33m" << current_entry->d_name << std::endl;
+			}
+		}
+	}
+	closedir(dir);
+	return (files);
+}
+
+std::string method::generateDeletePage()
+{
+	std::ifstream file("./www/delete.html");
+	
+	if (file.is_open())
+	{
+		std::string content = gnl(file);
+		std::vector<std::string> allFiles = listFiles(); 
+		std::string htmlList = generateListHtml(allFiles);
+		size_t pos = content.find("<span>No file yet</span>");
+		if (pos != std::string::npos)
+			content.replace(pos, 24, htmlList);
+		else
+			return (ERROR_500_RESPONSE);
+		return (
+			"HTTP/1.1 200 OK\r\n"
+			"Content-Type: text/html\r\n"
+			"Content-Length: " + to_string(content.length()) + "\r\n"
+			"\r\n" + content);
+	}
+	else
 		return (ERROR_404_RESPONSE);
+}
+
+std::string method::generateListHtml(std::vector<std::string> allFiles)
+{
+	std::string fullList = "";
+
+	if (allFiles.empty())
+	{
+		fullList +=
+			"	<span class=\"file_name\">No files found</span>";
+		return (fullList);
+	}
+	fullList += "<ul>";
+	for (std::vector<std::string>::iterator it = allFiles.begin(); it != allFiles.end(); ++it)
+	{
+		std::string		fileContent;
+		std::ifstream	currentFile(("./www/tmp/" + *it).c_str());
+		std::string		buffer;
+		if (currentFile.is_open())
+		{
+			char tempBuffer[31] = {0};
+			currentFile.read(tempBuffer, 30); // i am not using gnl here because i want to limit the size of the content
+			buffer = std::string(tempBuffer);
+			currentFile.close();
+			fullList +=
+				"<li>"
+				"	<label for=\"" + *it + "\">"
+				"		<span class=\"file_name\">" + *it + "</span>"
+				"		<p class=\"file_content\">" + buffer + "</p>"
+				"	</label>"
+				"	<input type=\"checkbox\" name=\"" + *it + "\" id=\"" + *it + "\">"
+				"</li>";
+		}
+		else
+		{
+			fullList +=
+				"<li>"
+				"	<label for=\"" + *it + "\">"
+				"		<span class=\"file_name\">" + *it + "</span>"
+				"		<p class=\"file_content file_content_error\">The file is empty</p>"
+				"	</label>"
+				"	<input type=\"checkbox\" name=\"" + *it + "\" id=\"" + *it + "\">"
+				"</li>";
+		}
+	}
+	fullList +=
+		"</ul>"
+		"<button type=\"submit\" class=\"bigBtn\">Delete selected files</button>";
+	return (fullList);
+}
+
+std::string method::gnl(std::ifstream& file)
+{
+	std::string content = "";
+	std::string line;
+
+	while (std::getline(file, line))
+		content += line + "\n";
+	if (!content.empty())
+		content.erase(content.length() - 1);
+	file.close();
+	return (content);
 }

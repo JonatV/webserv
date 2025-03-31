@@ -4,6 +4,9 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <vector>
+#include <cstring>
+#include <dirent.h>
 
 #define PARSER_MAX_PAYLOAD 100 // global that has to come from the parser
 #define PARSER_GET_RIGHT 1
@@ -61,6 +64,13 @@ namespace method
 	
 	std::string foundPage(const std::string& filePath);
 	std::string error404Page();
+
+	std::vector<std::string> listFiles();
+	std::string generateDeletePage();
+	std::string generateListHtml(std::vector<std::string> allFiles);
+
+	// helper
+	std::string gnl(std::ifstream& file);
 }
 
 #endif
