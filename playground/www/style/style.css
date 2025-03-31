@@ -8,6 +8,7 @@
 
 	--glitch-color-1: rgba(112, 112, 112, 0.1);
 	--glitch-color-2: rgba(112, 112, 112, 0.2);
+	--glitch-color-3: rgba(223, 69, 78, 0.2);
 }
 
 body, h1, h2, h3, p, ul, ol {
@@ -25,6 +26,11 @@ body, h1, h2, h3, p, ul, ol {
 	width: 100%;
 }
 
+.div_header > * {
+	margin: 0.5rem 0;
+	z-index: 20;
+}
+
 body {
 	font-family: var(--font-family);
 	background-color: var(--background-color);
@@ -34,9 +40,7 @@ body {
 
 h1 {
 	font-size: 2.5em;
-	margin-bottom: 0.5em;
 	font-weight: bold;
-	z-index: 2;
 }
 
 button {
@@ -47,7 +51,6 @@ button {
 	font-size: 1em;
 	cursor: pointer;
 	border-radius: 5px;
-	z-index: 2;
 	transition: all 0.3s ease;
 }
 
@@ -64,7 +67,7 @@ button {
 	border-radius: 5px;
 }
 
-.rain {
+.glitch_bg {
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -76,5 +79,14 @@ button {
 		var(--glitch-color-2) 2px,
 		transparent 4px
 	);
-	z-index: 1;
+	z-index: 0;
+}
+
+.glitch_bg_red {
+	background: repeating-linear-gradient(
+		0deg,
+		var(--glitch-color-1) 0,
+		var(--glitch-color-3) 2px,
+		transparent 4px
+	);
 }
