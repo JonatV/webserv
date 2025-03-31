@@ -136,3 +136,58 @@ form {
 .div_methods > * {
 	margin: 2rem 0;
 }
+
+/* delete.html */
+ul {
+	list-style-type: none;
+	padding: 0;
+	margin: 0;
+}
+
+li {
+	display: flex;
+	justify-content: space-between;
+	padding: 10px;
+	margin-bottom: 10px;
+	border: 1px solid var(--primary-color);
+	border-radius: 5px;
+	background-color: transparent;
+	transition: background-color 0.3s ease;
+}
+
+label {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+li:hover {
+	background-color: var(--dark-secondary-color);
+}
+
+.file_name {
+	font-weight: bold;
+	margin-right: 10px;
+}
+
+.file_content {
+	font-style: italic;
+	margin-right: 10px;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+.file_content_error {
+	color: var(--secondary-color);
+	font-style: normal;
+}
+
+input[type="checkbox"] {
+	width: 20px;
+	height: 20px;
+	cursor: pointer;
+}
+
+li:has(input[type="checkbox"]:checked) {
+	background-color: var(--secondary-color);
+}
