@@ -5,7 +5,7 @@
 #include <string>
 #include <fstream>
 
-
+#define MAX_PAYLOAD 100 // global that has to come from the parser
 
 const std::string ERROR_400_RESPONSE =
 	"HTTP/1.1 400 Bad Request\r\n"
@@ -31,7 +31,7 @@ const std::string ERROR_405_RESPONSE =
 const std::string ERROR_413_RESPONSE =
 	"HTTP/1.1 413 Payload Too Large\r\n"
 	"Content-Type: text/html\r\n"
-	"Content-Length: 66\r\n"
+	"Content-Length: 67\r\n"
 	"\r\n"
 	"<html><body><h1>413 Payload Too Large</h1><p>Request is too big.</p></body></html>";
 	
@@ -46,7 +46,7 @@ const std::string ERROR_500_RESPONSE =
 namespace method
 {
 	std::string GET(const std::string& request);
-	// std::string POST(const std::string& request);
+	std::string POST(const std::string& request);
 	// std::string DELETE(const std::string& request);
 	
 	std::string foundPage(const std::string& filePath);

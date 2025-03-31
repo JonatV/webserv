@@ -3,8 +3,8 @@
 
 std::string method::GET(const std::string& request)
 {
-	std::string response;
-	std::string filePath;
+	std::string	response;
+	std::string	filePath;
 
 	size_t start = request.find("GET") + 4; // 4 is to go after "GET "
 	if (start == std::string::npos)
@@ -86,4 +86,47 @@ std::string method::error404Page()
 	else
 		notFoundResponse = ERROR_404_RESPONSE;
 	return (notFoundResponse);
+}
+
+// 1 parse the content
+// 2 save the content
+	// 2.1 create a tmp file_name
+		// 2.1.1 check if the file exists
+		// 2.1.2 if it exists, create a new file_name and repeat 2.1.1
+	// 2.2 check if the file exists
+	// 2.3 write the content to the file
+	// 2.4 close the file
+// 3 send the response
+std::string method::POST(const std::string& request)
+{
+	std::string	response;
+	std::string	content;
+
+	size_t start = request.find("MSG_TEXTAREA=");
+	if (start == std::string::npos || request.find("application/x-www-form-urlencoded") == std::string::npos)
+		return (ERROR_400_RESPONSE); // bad request
+	content = request.substr(start + std::string("MSG_TEXTAREA=").length());
+	std::cout << "\e[30m" << content << std::endl;
+	ssize_t bytesReceived = content.length();
+	std::cout << "Bytes received: " << bytesReceived << "\e[0m" << std::endl;
+	if (bytesReceived > MAX_PAYLOAD)
+		return (ERROR_413_RESPONSE);
+	std::string		fileName = "./www/tmp/" + to_string(time(0)) + ".txt";
+	while (std::ifstream(fileName.c_str()))
+		fileName = "./www/tmp/" + to_string(time(0)) + ".txt";
+	std::ofstream	file(fileName.c_str());
+	if (file.is_open())
+	{
+		file << content;
+		file.close();
+		response = 
+			"HTTP/1.1 201 Created\r\n"
+			"Content-Type: text/html\r\n"
+			"Content-Length: 58\r\n"
+			"\r\n"
+			"<html><body><h1>201 Created</h1><p>Message saved.</p></body></html>";
+	}
+	else
+		response = ERROR_500_RESPONSE;
+	return (response);
 }

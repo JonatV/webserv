@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/28 14:07:17 by jveirman          #+#    #+#             */
-/*   Updated: 2025/03/31 11:06:29 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/03/31 13:36:07 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -107,24 +107,18 @@ int main(int ac, char const *av[])
 		while (true)
 		{
 			// receive the requests
-			char buffer[2048];
+			char buffer[10000];
 			ssize_t bytesReceived = recv(clientSocketFd, buffer, sizeof(buffer) - 1, 0);
 			if (bytesReceived == -1)
 			{
-				send(clientSocketFd, ERROR_500_RESPONSE.c_str(), ERROR_500_RESPONSE.size(), 0);
 				std::cout << "\e[1;37;41mError: 500: Internal error\e[0m" << std::endl;
+				send(clientSocketFd, ERROR_500_RESPONSE.c_str(), ERROR_500_RESPONSE.size(), 0);
 				break;
 			}
 			if (bytesReceived == 0)
 			{
-				send(clientSocketFd, ERROR_400_RESPONSE.c_str(), ERROR_400_RESPONSE.size(), 0);
 				std::cout << "\e[1;37;41mError: 400: Bad request\e[0m" << std::endl;
-				break;
-			}
-			if (bytesReceived > (ssize_t)sizeof(buffer))
-			{
-				send(clientSocketFd, ERROR_413_RESPONSE.c_str(), ERROR_413_RESPONSE.size(), 0);
-				std::cout << "\e[1;37;41mError: 413: Request payload too large\e[0m" << std::endl;
+				send(clientSocketFd, ERROR_400_RESPONSE.c_str(), ERROR_400_RESPONSE.size(), 0);
 				break;
 			}
 			buffer[bytesReceived] = '\0'; // null-terminate the string
@@ -152,6 +146,7 @@ int main(int ac, char const *av[])
 			else if (request.find("POST") != std::string::npos)
 			{
 				std::cout << "POST request" << std::endl;
+				response = method::POST(request);
 			}
 			else if (request.find("DELETE") != std::string::npos)
 			{

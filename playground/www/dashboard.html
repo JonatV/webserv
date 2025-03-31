@@ -17,9 +17,14 @@
 		<div class="flex_column div_main">
 			<div class="flex_column">
 				<h2>Methods</h2>
-				<div class="flex_row">
+				<div class="flex_column div_methods">
 					<button class="bigBtn" id="get" onclick="window.location.href='/get'">GET</button>
-					<button class="bigBtn" id="post" onclick="window.location.href='/post'">POST</button>
+					<div class="form_post">
+						<form class="flex_column" action="" method="post">
+							<textarea class="form_textarea" name="MSG_TEXTAREA" id="msg" placeholder="Enter your message here"></textarea>
+							<button type="submit" class="bigBtn">POST</button>
+						</form>
+					</div>
 					<button class="bigBtn" id="delete" onclick="window.location.href='/delete'">DELETE</button>
 				</div>
 			</div>
