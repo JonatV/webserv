@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/24 18:14:47 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/03/25 15:28:46 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/03/27 16:05:48 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,7 +86,7 @@ std::string trim(const std::string& str) {
 // Parses a list of strings from `[...]`
 std::vector<std::string> parseList(const std::string& line) {
     std::vector<std::string> result;
-    std::regex list_regex(R"(\[\s*\"([^\"]+)\"\s*(?:,\s*\"([^\"]+)\"\s*)*\])");
+    std::regex list_regex(R"(\[\s*\"([^\"]+)\"\s*(?:,\s*\"([^\"]+)\"\s*)*\])"); //pas a la norme 98
     std::smatch match;
     if (std::regex_search(line, match, list_regex)) {
         for (size_t i = 1; i < match.size(); i++) {
