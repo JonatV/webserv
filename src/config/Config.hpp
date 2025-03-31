@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:08 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/03/28 17:11:13 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/03/31 19:31:05 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,8 @@
 # include <iostream>
 # include <vector>
 # include <map>
+# include <fstream>
+# include <sstream>
 # include "ServerConfig.hpp"
 
 class Config {
@@ -24,8 +26,9 @@ class Config {
 		std::vector<std::string>	_tokens;
 
 		// Functions to parse the config file
-		ServerConfig				_parseServer(std::vector<std::string>);
-		std::vector<std::string>	_getTokensFromFile(std::string);
+		std::vector<ServerConfig>	_parseServers(std::vector<std::string> tokens);
+		std::vector<std::string>	_getTokensFromFile(std::ifstream& file);
+		bool 						_parseFile(const std::string& filename);
 
 	public:
 		Config();
@@ -49,6 +52,10 @@ class Config {
 			// Configuration Key Errors
     		ERROR_UNKNOWN_KEY 
     	};
+		
+
+		// Function to display the informations extracted and put in the class
+		void displayConfig() const;
 };
 
 #endif

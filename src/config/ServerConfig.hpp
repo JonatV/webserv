@@ -6,12 +6,12 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/03/28 17:09:33 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/03/31 19:26:55 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef SERVERCONFIG_HPP
-# define SERVECONFIG_HPP
+# define SERVERCONFIG_HPP
 
 # include <vector>
 # include <map>
@@ -29,17 +29,20 @@ class ServerConfig {
 		std::map<std::string, LocationConfig>	_locations;
 
 		// Functions to parse Server
-		std::map<std::string, LocationConfig>	_getLocationConfig(std::vector<std::string>);
-		int										_getPort(std::vector<std::string>);
-		std::string								_getHost(std::vector<std::string>);
-		size_t									_getClientBodyLimit(std::vector<std::string>);
-		std::string								_getServerName(std::vector<std::string>);
+		std::map<std::string, LocationConfig>	_getLocationConfig(std::vector<std::string> tokens, size_t i);
+		int										_getPort(std::vector<std::string> tokens, size_t i);
+		std::string								_getHost(std::vector<std::string> tokens, size_t i);
+		size_t									_getClientBodyLimit(std::vector<std::string> tokens, size_t i);
+		std::string								_getServerName(std::vector<std::string> tokens, size_t i);
 
 
 	public:
 		ServerConfig();
 		~ServerConfig();
 
+		// So that I can access private attributes in the config class
+		friend class Config;
+		
 		// Different possible errors for the server part of the config file
 		enum e_error {
 			ERROR_NONE,

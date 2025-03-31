@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:12 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/03/28 17:13:33 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/03/31 19:32:10 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,15 +26,18 @@ class LocationConfig {
 		bool						_autoindex;
 
 		// Functions to parse location
-		std::string	_getIndex(std::vector<std::string>);
-		std::string	_getAllowedMethods(std::vector<std::string>);
-		std::string	_getRoot(std::vector<std::string>);
-		bool		_getAutoIndex(std::vector<std::string>);
+		std::string	_getIndex(std::vector<std::string> tokens);
+		std::string	_getAllowedMethods(std::vector<std::string> tokens);
+		std::string	_getRoot(std::vector<std::string>  tokens);
+		bool		_getAutoIndex(std::vector<std::string> tokens);
 
 	public:
 		LocationConfig();
 		~LocationConfig();
 
+		friend class ServerConfig;
+		friend class Config;
+		
 		// Different possible errors from the location part of the config file
 		enum e_error {
 			ERROR_NONE,
