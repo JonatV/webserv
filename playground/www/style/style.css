@@ -62,7 +62,7 @@ body {
 	height: 100vh;
 }
 
-.header_dashboard {
+.header_dashboard, .header_delete {
 	height: 300px;
 }
 

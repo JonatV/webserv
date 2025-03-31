@@ -17,6 +17,8 @@ std::string method::GET(const std::string& request)
 		filePath = "./www/index.html";
 	else if (path == "/dashboard" || path == "/dashboard.html")		// dashboard.html
 		filePath = "./www/dashboard.html";
+	else if (path == "/delete" || path == "/delete.html")			// delete.html - It will have a special handling for dynamic content
+		filePath = "./www/delete.html";
 	else if (path == "/style/style.css")							// style.css
 		filePath = "./www/style/style.css";
 	else if (path == "/404" || path == "/404error.html")			// 404error.html

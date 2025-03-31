@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Delete interface</title>
+	<link rel="stylesheet" type="text/css" href="style/style.css">
+</head>
+<body>
+	<header>
+		<div class="flex_column header_delete">
+			<h1>Delete interface</h1>
+			<button id="toHome" onclick="window.location.href='/'">Go to the homepage</button>
+		</div>
+	</header>
+	<main>
+		<div class="flex_column div_main">
+			<h2>Files on the server</h2>
+			<form action="/delete" method="post">
+				<ul>
+					<li>
+						<a href="/tmp/file.txt">file.txt (test)</a>
+						<input type="checkbox" name="file.txt" id="file">
+					</li>
+					<li>
+						<a href="/tmp/file2.txt">file2.txt (test)</a>
+						<input type="checkbox" name="file2.txt" id="file1">
+					</li>
+				</ul>
+				<button type="submit" class="bigBtn">Delete selected files</button>
+			</form>
+		</div>
+</body>
+</html>
