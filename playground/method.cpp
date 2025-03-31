@@ -25,18 +25,16 @@ std::string method::GET(const std::string& request)
 		filePath = "./www/error_pages/404error.html";
 	else
 		filePath = "";
-	if (!filePath.empty()) {
-		response = method::foundPage(filePath);
-	} else {
-		response = method::error404Page();
-	}
-	return response;
+	if (!filePath.empty())
+		return (method::foundPage(filePath));
+	else
+		return (method::error404Page());
 }
 
 std::string method::foundPage(const std::string& filepath)
 {
 	std::ifstream	file(filepath.c_str());
-	std::string		response;
+
 	std::cout << "\e[32mGET request for file: " << filepath << "\e[0m" << std::endl;
 	if (file.is_open())
 	{
@@ -54,14 +52,14 @@ std::string method::foundPage(const std::string& filepath)
 			textType = "css";
 		else
 			textType = "html";
-		response = 
+		return (
 			"HTTP/1.1 200 OK\r\n"
-			"Content-Type: text/"+ textType +"\r\n"
+			"Content-Type: text/" + textType + "\r\n"
 			"Content-Length: " + to_string(content.length()) + "\r\n"
-			"\r\n" + content;
-	} else 
-		response = error404Page();
-	return (response);
+			"\r\n" + content);
+	}
+	else
+		return(method::error404Page());
 }
 
 std::string method::error404Page()
@@ -79,15 +77,14 @@ std::string method::error404Page()
 		if (!content.empty())
 			content.erase(content.length() - 1);
 		file.close();
-		notFoundResponse = 
+		return (
 			"HTTP/1.1 404 Not Found\r\n"
 			"Content-Type: text/html\r\n"
 			"Content-Length: " + to_string(content.length()) + "\r\n"
-			"\r\n" + content;
+			"\r\n" + content);
 	}
 	else
-		notFoundResponse = ERROR_404_RESPONSE;
-	return (notFoundResponse);
+		return (ERROR_404_RESPONSE);
 }
 
 // 1 parse the content
@@ -121,14 +118,14 @@ std::string method::POST(const std::string& request)
 	{
 		file << content;
 		file.close();
-		response = 
+		return (
 			"HTTP/1.1 201 Created\r\n"
 			"Content-Type: text/html\r\n"
 			"Content-Length: 58\r\n"
 			"\r\n"
-			"<html><body><h1>201 Created</h1><p>Message saved.</p></body></html>";
+			"<html><body><h1>201 Created</h1><p>Message saved.</p></body></html>");
 	}
 	else
-		response = ERROR_500_RESPONSE;
-	return (response);
+		return (ERROR_500_RESPONSE);
+}
 }
