@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/28 14:07:17 by jveirman          #+#    #+#             */
-/*   Updated: 2025/03/30 00:42:51 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/03/31 11:06:29 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,16 +112,19 @@ int main(int ac, char const *av[])
 			if (bytesReceived == -1)
 			{
 				send(clientSocketFd, ERROR_500_RESPONSE.c_str(), ERROR_500_RESPONSE.size(), 0);
+				std::cout << "\e[1;37;41mError: 500: Internal error\e[0m" << std::endl;
 				break;
 			}
 			if (bytesReceived == 0)
 			{
 				send(clientSocketFd, ERROR_400_RESPONSE.c_str(), ERROR_400_RESPONSE.size(), 0);
+				std::cout << "\e[1;37;41mError: 400: Bad request\e[0m" << std::endl;
 				break;
 			}
 			if (bytesReceived > (ssize_t)sizeof(buffer))
 			{
 				send(clientSocketFd, ERROR_413_RESPONSE.c_str(), ERROR_413_RESPONSE.size(), 0);
+				std::cout << "\e[1;37;41mError: 413: Request payload too large\e[0m" << std::endl;
 				break;
 			}
 			buffer[bytesReceived] = '\0'; // null-terminate the string
@@ -138,6 +141,7 @@ int main(int ac, char const *av[])
 			if (request.find("Connection: close") != std::string::npos)
 			{
 				std::cout << "Client requested to close the connection" << std::endl;
+				std::cout << "\e[1;32;42mClient requested to close the connection\e[0m" << std::endl;
 				break;
 			}
 			else if (request.find("GET") != std::string::npos)

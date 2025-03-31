@@ -13,17 +13,13 @@ std::string method::GET(const std::string& request)
 	if (end == std::string::npos)
 		return (ERROR_400_RESPONSE);
 	std::string path = request.substr(start, end - start);
-	if (path == "/")
+	if (path == "/" || path == "/index" || path == "/index.html")	// index.html
 		filePath = "./www/index.html";
-	else if (path == "/index.html")
-		filePath = "./www/index.html";
-	else if (path == "/index")
-		filePath = "./www/index.html";
-	else if (path == "/style/style.css")
+	else if (path == "/dashboard" || path == "/dashboard.html")		// dashboard.html
+		filePath = "./www/dashboard.html";
+	else if (path == "/style/style.css")							// style.css
 		filePath = "./www/style/style.css";
-	else if (path == "/404error.html")
-		filePath = "./www/error_pages/404error.html";
-	else if (path == "/404")
+	else if (path == "/404" || path == "/404error.html")			// 404error.html
 		filePath = "./www/error_pages/404error.html";
 	else
 		filePath = "";
