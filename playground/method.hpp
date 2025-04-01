@@ -68,6 +68,9 @@ namespace method
 	std::vector<std::string> listFiles();
 	std::string generateDeletePage();
 	std::string generateListHtml(std::vector<std::string> allFiles);
+	std::string handleDeleteRequest(const std::string& request);
+	std::string deleteTargetFiles(std::vector<std::string>);
+	std::string trimFileName(std::string);
 
 	// helper
 	std::string gnl(std::ifstream& file);

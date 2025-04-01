@@ -74,20 +74,14 @@ std::string method::error404Page()
 		return (ERROR_404_RESPONSE);
 }
 
-// 1 parse the content
-// 2 save the content
-	// 2.1 create a tmp file_name
-		// 2.1.1 check if the file exists
-		// 2.1.2 if it exists, create a new file_name and repeat 2.1.1
-	// 2.2 check if the file exists
-	// 2.3 write the content to the file
-	// 2.4 close the file
-// 3 send the response
 std::string method::POST(const std::string& request)
 {
 	if (!PARSER_POST_RIGHT) return (ERROR_403_RESPONSE);
-	std::string	content;
 
+	if (request.find("POST /delete") != std::string::npos)
+		return (handleDeleteRequest(request));
+
+	std::string	content;
 	size_t start = request.find("MSG_TEXTAREA=");
 	if (start == std::string::npos || request.find("application/x-www-form-urlencoded") == std::string::npos)
 		return (ERROR_400_RESPONSE); // bad request
@@ -106,14 +100,78 @@ std::string method::POST(const std::string& request)
 		file << content;
 		file.close();
 		return (
-			"HTTP/1.1 201 Created\r\n"
+			"HTTP/1.1 303 See Other\r\n"
 			"Content-Type: text/html\r\n"
-			"Content-Length: 58\r\n"
-			"\r\n"
-			"<html><body><h1>201 Created</h1><p>Message saved.</p></body></html>");
+			"Content-Length: 0\r\n"
+			"Location: /dashboard.html\r\n"
+			"\r\n");
 	}
 	else
 		return (ERROR_500_RESPONSE);
+}
+
+/*
+*	Check permission
+*	Check body exist or error in the body (no "=on", means nothing check to be deleted)
+*	Check if body has multiple file to delete
+*	Trim the =on or =on&
+*	Delete the files
+*/
+std::string method::handleDeleteRequest(const std::string& request)
+{
+	if (!PARSER_DELETE_RIGHT) return (ERROR_403_RESPONSE);
+	if (request.find("Content-Length: 0") != std::string::npos)
+		return (
+			"HTTP/1.1 200 OK\r\n"
+			"Content-Type: text/html\r\n"
+			"Content-Length: 0\r\n"
+			"Location: /delete.html\r\n"
+			"\r\n");
+	if (request.find("=on") == std::string::npos)
+		return (ERROR_400_RESPONSE);
+	std::string body = request.substr(request.find("\r\n\r\n") + 4);
+	std::vector<std::string> targetFiles;
+	if (body.find("=on&") != std::string::npos)
+	{
+		size_t start = 0;
+		size_t end = body.find("&");
+		while (end != std::string::npos)
+		{
+			targetFiles.push_back(trimFileName(body.substr(start, end - start)));
+			start = end + 1;
+			end = body.find("&", start);
+		}
+		if (start < body.length())
+			targetFiles.push_back(trimFileName(body.substr(start)));
+	}
+	else
+		targetFiles.push_back(trimFileName(body));
+	return (deleteTargetFiles(targetFiles));
+}
+
+std::string method::trimFileName(std::string str)
+{
+	// str = "file1=on&file2=on&file3=on"
+	// or str = "file1=on"
+	size_t start = 0;
+	size_t end = str.find("=");
+	return (str.substr(start, end - start));
+}
+
+std::string method::deleteTargetFiles(std::vector<std::string>files)
+{
+	for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); ++it)
+	{
+		std::string filePath = "./www/tmp/" + *it;
+		if (std::remove(filePath.c_str()) != 0)
+			return (ERROR_500_RESPONSE);
+	}
+	return (
+		"HTTP/1.1 303 See Other\r\n"
+		"Content-Type: text/html\r\n"
+		"Content-Length: 0\r\n"
+		"Location: /delete.html\r\n"
+		"\r\n");
 }
 
 std::string method::DELETE(const std::string& request)
@@ -160,13 +218,11 @@ std::vector<std::string> method::listFiles()
 	dir = opendir("./www/tmp/");
 	if (dir)
 	{
-		std::cout << "\e[33mFiles in /www/tmp/: " << std::endl;
 		while ((current_entry = readdir(dir)))
 		{
 			if (current_entry->d_type == DT_REG && strcmp(current_entry->d_name, ".") != 0)
 			{
 				files.push_back(current_entry->d_name);
-				std::cout << "\e[33m" << current_entry->d_name << std::endl;
 			}
 		}
 	}
