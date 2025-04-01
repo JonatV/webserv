@@ -6,25 +6,49 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/01 13:59:15 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/01 18:48:44 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "Listener.hpp"
-#include "Epoll.hpp"
 #include "Client.hpp"
 #include <vector>
 #include <map>
+#include <iostream>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <netinet/in.h>
+#include <cstring>
+#include <fcntl.h>
+#include <sys/epoll.h>
+
+#define MAX_QUEUE 10
 
 class Server
 {
 	private:
-		std::vector<Listener>	_listeners;
+		int						_port; // Parser
+		int						_serverSocketFd;
+		struct sockaddr_in		_serverSocketId;
 		std::map<int, Client>	_clients;
-		Epoll					_observer;
+		int						_epollFd;
+
+		// methods
+		void				setNonBlocking(int fd);
+		void				createEpollFd();
+		void				addServerSocketToEpoll();
+		void				initSocketId();
+		void				bindSocketFdWithID();
+
+		void				acceptClient(struct epoll_event &event);
+		void				treatMethod(struct epoll_event &event);
+		void				closeClient(struct epoll_event &event);
+	public:
+		Server(int port);
+		~Server();
+		void run();
 };
 
 #endif
