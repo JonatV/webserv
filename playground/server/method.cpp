@@ -20,6 +20,8 @@ std::string method::GET(const std::string& request, int port)
 		filePath = "./www/delete.html";
 	else if (path == "/style/style.css")							// style.css
 		filePath = "./www/style/style.css";
+	else if (path == "/assets/favicon.ico" || path == "/favicon.ico")	// favicon.ico
+		filePath = "./www/assets/favicon.ico";
 	else if (path == "/404" || path == "/404error.html")			// 404error.html
 		filePath = "./www/error_pages/404error.html";
 	else
