@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/01 18:59:43 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/02 02:12:50 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,6 +62,21 @@ void Server::run()
 		}
 	}
 }
+
+void Server::treatMethod(struct epoll_event &event)
+{
+	int clientSocketFd = event.data.fd;
+	// read the data from the client
+	char buffer[BUFFER_SIZE] = {0};
+	ssize_t bytesReceived = recv(clientSocketFd, buffer, sizeof(buffer) - 1, 0);
+	//todo check bytesReveived error
+	
+	std::string response;
+	std::string request(buffer);
+	
+	
+}
+
 
 void Server::acceptClient(struct epoll_event &event)
 {

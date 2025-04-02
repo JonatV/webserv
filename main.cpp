@@ -7,8 +7,8 @@ int main(int argc, char **argv) {
         return 1;
     }
     std::string configPath = argv[1];
-    if (parseConfigFile(configPath) == 1)
-        return 1;
+    // if (parseConfigFile(configPath) == 1)
+    //     return 1;
 
     http::Server test;
     return 0;

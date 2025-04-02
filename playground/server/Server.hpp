@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/01 18:48:44 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/01 23:08:28 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #define SERVER_HPP
 
 #include "Client.hpp"
+#include "method.hpp"
 #include <vector>
 #include <map>
 #include <iostream>
@@ -25,6 +26,7 @@
 #include <sys/epoll.h>
 
 #define MAX_QUEUE 10
+#define BUFFER_SIZE 2048
 
 class Server
 {
