@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/01 18:55:29 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/02 04:40:16 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,13 +23,14 @@ class Client
 {
 	private:
 		int					_clientSocketFd;
-		struct sockaddr_in	_clientAddress;
+		struct sockaddr_in	_clientSocketId;
 		int					_clientPort;
 		char				_clientIp[INET_ADDRSTRLEN];
 		std::string 		_requestHeader;
 		std::string 		_responseHeader;
+		int					_serverPort;
 	public:
-		Client(int clientSocketFd, struct sockaddr_in clientAddress);
+		Client(int clientSocketFd, struct sockaddr_in clientSocketId, int serverPort);
 		~Client();
 		const char*		getClientIp() const;
 		int				getClientPort() const;

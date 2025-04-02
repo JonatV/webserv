@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <cstring>
 #include <dirent.h>
@@ -58,11 +59,11 @@ const std::string ERROR_500_RESPONSE =
 
 namespace method
 {
-	std::string GET(const std::string& request);
-	std::string POST(const std::string& request);
-	std::string DELETE(const std::string& request);
+	std::string GET(const std::string& request, int port);
+	std::string POST(const std::string& request, int port);
+	std::string DELETE(const std::string& request, int port);
 	
-	std::string foundPage(const std::string& filePath);
+	std::string foundPage(const std::string& filePath, int port);
 	std::string error404Page();
 
 	std::vector<std::string> listFiles();
@@ -74,6 +75,13 @@ namespace method
 
 	// helper
 	std::string gnl(std::ifstream& file);
+	template <typename T>
+	std::string to_string(const T& value)
+	{
+		std::ostringstream	oss;
+		oss << value;
+		return (oss.str());
+	}
 }
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/01 23:08:28 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/02 04:44:40 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <sys/epoll.h>
+#include <utility>
 
 #define MAX_QUEUE 10
 #define BUFFER_SIZE 2048
@@ -34,23 +35,30 @@ class Server
 		int						_port; // Parser
 		int						_serverSocketFd;
 		struct sockaddr_in		_serverSocketId;
-		std::map<int, Client>	_clients;
+		std::map<int, Client *>	_clients;
 		int						_epollFd;
 
 		// methods
 		void				setNonBlocking(int fd);
 		void				createEpollFd();
 		void				addServerSocketToEpoll();
-		void				initSocketId();
+		void				initSocketId(struct sockaddr_in &socketId);
 		void				bindSocketFdWithID();
 
-		void				acceptClient(struct epoll_event &event);
-		void				treatMethod(struct epoll_event &event);
+		void				acceptClient();
 		void				closeClient(struct epoll_event &event);
+		int					treatMethod(struct epoll_event &event);
+		std::string			selectMethod(char buffer[BUFFER_SIZE]);
+
+		// Prevent Copying
+		Server(const Server& other);
+		Server& operator=(const Server& other);
 	public:
 		Server(int port);
 		~Server();
 		void run();
+
+		int	getPort() const;
 };
 
 #endif

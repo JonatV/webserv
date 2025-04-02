@@ -1,7 +1,6 @@
 #include "method.hpp"
-#include "../includes/tools/stringManipulation.hpp"
 
-std::string method::GET(const std::string& request)
+std::string method::GET(const std::string& request, int port)
 {
 	if (!PARSER_GET_RIGHT) return (ERROR_403_RESPONSE);
 	std::string	filePath;
@@ -26,16 +25,16 @@ std::string method::GET(const std::string& request)
 	else
 		filePath = "";
 	if (!filePath.empty())
-		return (method::foundPage(filePath));
+		return (method::foundPage(filePath, port));
 	else
 		return (method::error404Page());
 }
 
-std::string method::foundPage(const std::string& filepath)
+std::string method::foundPage(const std::string& filepath, int port)
 {
 	std::ifstream	file(filepath.c_str());
 
-	std::cout << "\e[32mGET request for file: " << filepath << "\e[0m" << std::endl;
+	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mGET request for file: " << filepath << "\e[0m" << std::endl;
 	if (file.is_open())
 	{
 		std::string	textType;
@@ -74,21 +73,23 @@ std::string method::error404Page()
 		return (ERROR_404_RESPONSE);
 }
 
-std::string method::POST(const std::string& request)
+std::string method::POST(const std::string& request, int port)
 {
 	if (!PARSER_POST_RIGHT) return (ERROR_403_RESPONSE);
-
 	if (request.find("POST /delete") != std::string::npos)
+	{
+		std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST request for delete\e[0m" << std::endl;
 		return (handleDeleteRequest(request));
-
+	}
+	
+	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST request\e[0m" << std::endl;
 	std::string	content;
 	size_t start = request.find("MSG_TEXTAREA=");
 	if (start == std::string::npos || request.find("application/x-www-form-urlencoded") == std::string::npos)
 		return (ERROR_400_RESPONSE); // bad request
 	content = request.substr(start + std::string("MSG_TEXTAREA=").length());
-	std::cout << "\e[30m" << content << std::endl;
+	std::cout << "\t\e[2mcontent: " << content << "\e[0m" << std::endl;
 	ssize_t bytesReceived = content.length();
-	std::cout << "Bytes received: " << bytesReceived << "\e[0m" << std::endl;
 	if (bytesReceived > PARSER_MAX_PAYLOAD)
 		return (ERROR_413_RESPONSE);
 	std::string		fileName = "./www/tmp/" + to_string(time(0)) + ".txt";
@@ -174,7 +175,7 @@ std::string method::deleteTargetFiles(std::vector<std::string>files)
 		"\r\n");
 }
 
-std::string method::DELETE(const std::string& request)
+std::string method::DELETE(const std::string& request, int port)
 {
 	if (!PARSER_DELETE_RIGHT) return (ERROR_403_RESPONSE);
 	std::string filePath;
@@ -198,6 +199,7 @@ std::string method::DELETE(const std::string& request)
 	if (!file.is_open())
 		return (ERROR_404_RESPONSE);
 	file.close();
+	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mDELETE request for file: " << filePath << "\e[0m" << std::endl;
 	if (std::remove(filePath.c_str()) == 0)
 		return (
 			"HTTP/1.1 200 OK\r\n"
