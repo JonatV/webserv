@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:12 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/03/31 19:32:10 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/03 17:25:57 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,7 +63,7 @@ class LocationConfig {
 			ERROR_INVALID_AUTOINDEX,
 
 			// Configuration Key Errors
-    		ERROR_UNKNOWN_KEY 
+			ERROR_UNKNOWN_KEY 
 		};
 
 };
