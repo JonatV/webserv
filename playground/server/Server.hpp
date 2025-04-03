@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/02 04:44:40 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/03 23:30:27 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ class Server
 		int						_epollFd;
 
 		// methods
-		void				setNonBlocking(int fd);
+		int					setNonBlocking(int fd);
 		void				createEpollFd();
 		void				addServerSocketToEpoll();
 		void				initSocketId(struct sockaddr_in &socketId);
@@ -49,6 +49,7 @@ class Server
 		void				closeClient(struct epoll_event &event);
 		int					treatMethod(struct epoll_event &event);
 		std::string			selectMethod(char buffer[BUFFER_SIZE]);
+		void				sendErrorResponse(int clientSocketFd, const std::string &errorResponse);
 
 		// Prevent Copying
 		Server(const Server& other);

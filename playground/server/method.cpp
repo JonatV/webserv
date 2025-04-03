@@ -326,6 +326,7 @@ std::string method::gnl(std::ifstream& file)
 
 std::string	method::handleCGI(const std::string& request, int port)
 {
+	(void)port; // dev
 	std::string cgiPath;
 	if (request.find(CGI1) != std::string::npos)
 		cgiPath = "./www/cgi-bin/" + std::string(CGI1);
@@ -336,4 +337,5 @@ std::string	method::handleCGI(const std::string& request, int port)
 	int pipeFd[2];
 	if (pipe(pipeFd) == -1)
 		return (ERROR_500_RESPONSE);
+	return (""); // dev: to be implemented
 }

@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/02 06:17:21 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/03 23:40:13 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,10 +21,22 @@ void Server::run()
 {
 	// create socket
 	_serverSocketFd = socket(AF_INET, SOCK_STREAM, 0);
-	if (_serverSocketFd == -1)
+	if (_serverSocketFd == -1 )
 		throw std::runtime_error("Socket can't be created");
 	// Set the socket to be non-blocking // todo check if has to be done
-	setNonBlocking(_serverSocketFd);
+	int retValue = setNonBlocking(_serverSocketFd);
+	if (retValue == -1)
+	{
+		std::cerr << "\e[31m[" << _port << "]\e[0m\t" << "\e[2mFailed to retrieve socket flags\e[0m" << std::endl;
+		close(_serverSocketFd);
+		exit(EXIT_FAILURE);
+	}
+	else if (retValue == -2)
+	{
+		std::cerr << "\e[31m[" << _port << "]\e[0m\t" << "\e[2mFailed to set server socket to non-blocking\e[0m" << std::endl;
+		close(_serverSocketFd);
+		exit(EXIT_FAILURE);
+	}
 	// init and bind the socket
 	initSocketId(_serverSocketId);
 	bindSocketFdWithID();
@@ -39,7 +51,7 @@ void Server::run()
 	// create epoll fd and add server socket to epoll
 	createEpollFd();
 	addServerSocketToEpoll();
-	// accept incoming connections
+	// accept incoming connections continuously. This is the main loop of the server which will run until the server is stopped
 	struct epoll_event	events[MAX_QUEUE];
 	while (true)
 	{
@@ -53,9 +65,7 @@ void Server::run()
 		for (int i = 0; i < numEvents; i++)
 		{
 			if (events[i].data.fd == _serverSocketFd)
-			{
-				acceptClient();
-			}
+				acceptClient(); // wip arrive here for the check of the errors
 			else {
 				if (events[i].events & EPOLLIN)
 				{
@@ -124,25 +134,45 @@ void Server::acceptClient()
 	int clientSocketFd = accept(_serverSocketFd, (struct sockaddr *)&clientSocketId, &clientSocketLength);
 	if (clientSocketFd == -1)
 	{
-		//todo: do something
+		std::cerr << "\e[31m[" << _port << "]\e[0m\t" << "\e[2mFailed to accept client connection\e[0m" << std::endl;
+		return;
 	}
 	// set the client socket to be non-blocking
-	// setNonBlocking(clientSocketFd);
-	// init the client address
-	// initSocketId(clientSocketId);
+	int retValue = setNonBlocking(clientSocketFd);
+	if (retValue == -1)
+	{
+		std::cout << "\e[31m[" << _port << "]\e[0m\t" << "\e[2mFailed to retrieve socket flags\e[0m" << std::endl;
+		sendErrorResponse(clientSocketFd, ERROR_500_RESPONSE);
+		return;
+	}
+	else if (retValue == -2)
+	{
+		std::cerr << "\e[31m[" << _port << "]\e[0m\t" << "\e[2mFailed to set client socket to non-blocking\e[0m" << std::endl;
+		sendErrorResponse(clientSocketFd, ERROR_500_RESPONSE);
+		return;
+	}
 	// add the client socket to epoll
 	struct epoll_event newEventClient;
-	newEventClient.events = EPOLLIN | EPOLLET; // edge triggered
+	newEventClient.events = EPOLLIN | EPOLLET; // edge triggered (enable the possibility to handls partial data)
 	newEventClient.data.fd = clientSocketFd;
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientSocketFd, &newEventClient) == -1)
 	{
-		std::cout << "\e[1;37;41mError: Failed to add client socket to epoll\e[0m" << std::endl;
-		close(clientSocketFd);
-		throw std::runtime_error("Failed to add client socket to epoll");
+		std::cerr << "\e[31m[" << _port << "]\e[0m\t" << "\e[2mFailed to add client socket to epoll\e[0m" << std::endl;
+		sendErrorResponse(clientSocketFd, ERROR_500_RESPONSE);
+		return;
 	}
 	// add the client to the map
 	Client *newClient = new Client(clientSocketFd, clientSocketId, _port);
 	_clients.insert(std::make_pair(clientSocketFd, newClient));
+}
+
+void Server::sendErrorResponse(int clientSocketFd, const std::string &errorResponse)
+{
+	if (send(clientSocketFd, errorResponse.c_str(), errorResponse.size(), 0) == -1)
+	{
+		std::cerr << "\e[31m[" << _port << "]\e[0m\t" << "\e[2mFailed to send error response to client\e[0m" << std::endl;
+	}
+	close(clientSocketFd);
 }
 
 void Server::closeClient(struct epoll_event &event)
@@ -172,7 +202,7 @@ void Server::addServerSocketToEpoll()
 	struct epoll_event	event;
 	event.events = EPOLLIN;
 	event.data.fd = _serverSocketFd;
-	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _serverSocketFd, &event) == -1)
+	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _serverSocketFd, &event) == 0)
 	{
 		close(_serverSocketFd);
 		close(_epollFd);
@@ -180,19 +210,14 @@ void Server::addServerSocketToEpoll()
 	}
 }
 
-void	Server::setNonBlocking(int fd)
+int	Server::setNonBlocking(int fd)
 {
 	int flags = fcntl(fd, F_GETFL, 0);
 	if (flags == -1)
-	{
-		close(fd);
-		throw std::runtime_error("Can't get socket flags");
-	}
+		return (-1);
 	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
-	{
-		close(fd);
-		throw std::runtime_error("Can't set socket to non-blocking");
-	}
+		return (-2);
+	return (0);
 }
 void Server::bindSocketFdWithID()
 {
@@ -216,7 +241,7 @@ void Server::initSocketId(struct sockaddr_in &socketId)
 
 Server::~Server()
 {
-	std::cout << "\e[2mDestroying Server object for " << _port << "\e[0m" << std::endl;
+	std::cout << "\e[34m[" << _port << "]\e[0m\t" << "\e[2mDestroying Server\e[0m" << std::endl;
 	for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); ++it)
 	{
 		delete it->second;
