@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/03/31 19:26:55 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/03 11:45:23 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ class ServerConfig {
 		std::map<std::string, LocationConfig>	_locations;
 
 		// Functions to parse Server
-		std::map<std::string, LocationConfig>	_getLocationConfig(std::vector<std::string> tokens, size_t i);
+		std::map<std::string, LocationConfig>	_getLocationConfig(std::vector<std::string> tokens, size_t& i);
 		int										_getPort(std::vector<std::string> tokens, size_t i);
 		std::string								_getHost(std::vector<std::string> tokens, size_t i);
 		size_t									_getClientBodyLimit(std::vector<std::string> tokens, size_t i);

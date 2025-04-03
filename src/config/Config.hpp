@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:08 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/03/31 19:31:05 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/03 11:56:45 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 # include <iostream>
 # include <vector>
 # include <map>
+# include <set>
 # include <fstream>
 # include <sstream>
 # include "ServerConfig.hpp"
@@ -25,14 +26,14 @@ class Config {
 		std::vector<ServerConfig>	_servers;
 		std::vector<std::string>	_tokens;
 
+		public:
+		Config();
+		~Config();
+		
 		// Functions to parse the config file
 		std::vector<ServerConfig>	_parseServers(std::vector<std::string> tokens);
 		std::vector<std::string>	_getTokensFromFile(std::ifstream& file);
 		bool 						_parseFile(const std::string& filename);
-
-	public:
-		Config();
-		~Config();
 
 		// Different possible errors from the config file
 		enum e_error {
