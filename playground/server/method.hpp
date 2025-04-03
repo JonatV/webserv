@@ -8,11 +8,14 @@
 #include <vector>
 #include <cstring>
 #include <dirent.h>
+#include <unistd.h>
 
 #define PARSER_MAX_PAYLOAD 100 // global that has to come from the parser
 #define PARSER_GET_RIGHT 1
 #define PARSER_POST_RIGHT 1
 #define PARSER_DELETE_RIGHT 1
+#define CGI1 "test.cgi"
+#define CGI2 "myscript.cgi"
 
 const std::string ERROR_400_RESPONSE =
 	"HTTP/1.1 400 Bad Request\r\n"
@@ -72,6 +75,9 @@ namespace method
 	std::string handleDeleteRequest(const std::string& request);
 	std::string deleteTargetFiles(std::vector<std::string>);
 	std::string trimFileName(std::string);
+
+	// CGI
+	std::string handleCGI(const std::string& request, int port);
 
 	// helper
 	std::string gnl(std::ifstream& file);

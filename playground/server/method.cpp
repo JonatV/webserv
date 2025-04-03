@@ -12,20 +12,24 @@ std::string method::GET(const std::string& request, int port)
 	if (end == std::string::npos)
 		return (ERROR_400_RESPONSE);
 	std::string path = request.substr(start, end - start);
-	if (path == "/" || path == "/index" || path == "/index.html")	// index.html
+	if (path == "/" || path == "/index" || path == "/index.html")		// index.html
 		filePath = "./www/index.html";
-	else if (path == "/dashboard" || path == "/dashboard.html")		// dashboard.html
+	else if (path == "/dashboard" || path == "/dashboard.html")			// dashboard.html
 		filePath = "./www/dashboard.html";
-	else if (path == "/delete" || path == "/delete.html")			// delete.html - It will have a special handling for dynamic content
+	else if (path == "/delete" || path == "/delete.html")				// delete.html - It will have a special handling for dynamic content
 		filePath = "./www/delete.html";
-	else if (path == "/style/style.css")							// style.css
+	else if (path == "/style/style.css")								// style.css
 		filePath = "./www/style/style.css";
 	else if (path == "/assets/favicon.ico" || path == "/favicon.ico")	// favicon.ico
 		filePath = "./www/assets/favicon.ico";
-	else if (path == "/404" || path == "/404error.html")			// 404error.html
+	else if (path == "/cgi-bin/test.cgi" || path == "/cgi-bin/test")	// test.cgi
+		filePath = "./www/cgi-bin/test.cgi";
+	else if (path == "/404" || path == "/404error.html")				// 404error.html
 		filePath = "./www/error_pages/404error.html";
 	else
 		filePath = "";
+	if (path.find("cgi-bin") != std::string::npos)
+		return (method::handleCGI(path, port));
 	if (!filePath.empty())
 		return (method::foundPage(filePath, port));
 	else
@@ -318,4 +322,18 @@ std::string method::gnl(std::ifstream& file)
 		content.erase(content.length() - 1);
 	file.close();
 	return (content);
+}
+
+std::string	method::handleCGI(const std::string& request, int port)
+{
+	std::string cgiPath;
+	if (request.find(CGI1) != std::string::npos)
+		cgiPath = "./www/cgi-bin/" + std::string(CGI1);
+	else if (request.find(CGI2) != std::string::npos)
+		cgiPath = "./www/cgi-bin/" + std::string(CGI2);
+	else
+		return (ERROR_404_RESPONSE);
+	int pipeFd[2];
+	if (pipe(pipeFd) == -1)
+		return (ERROR_500_RESPONSE);
 }
