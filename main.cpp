@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/02 02:47:49 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/02 03:58:32 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/04 15:35:03 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,11 +53,9 @@ int	main(int ac, char *av[])
 	std::vector<int> ports;
 	// port check //dev
 	if (!checkPorts(ac, av, ports))
-		return (1);
+		return (1);	// print the ports
+
 	// create the server
-	// print the ports
-	for (size_t i = 0; i < ports.size(); i++)
-		std::cout << "Port \e[43m" << ports[i] << "\e[0m" << std::endl;
 	// declare the web server
 	std::string configFile = "config.conf";
 	WebServer webServer(configFile, ports);
