@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/03 23:40:13 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/04 15:09:25 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,21 +21,19 @@ void Server::run()
 {
 	// create socket
 	_serverSocketFd = socket(AF_INET, SOCK_STREAM, 0);
-	if (_serverSocketFd == -1 )
-		throw std::runtime_error("Socket can't be created");
-	// Set the socket to be non-blocking // todo check if has to be done
+	if (_serverSocketFd == -1)
+		THROW_MSG(_port, "Socket can't be created");
+	// Set the socket to be non-blocking
 	int retValue = setNonBlocking(_serverSocketFd);
 	if (retValue == -1)
 	{
-		std::cerr << "\e[31m[" << _port << "]\e[0m\t" << "\e[2mFailed to retrieve socket flags\e[0m" << std::endl;
 		close(_serverSocketFd);
-		exit(EXIT_FAILURE);
+		THROW_MSG(_port, "Failed to retrieve socket flags");
 	}
 	else if (retValue == -2)
 	{
-		std::cerr << "\e[31m[" << _port << "]\e[0m\t" << "\e[2mFailed to set server socket to non-blocking\e[0m" << std::endl;
 		close(_serverSocketFd);
-		exit(EXIT_FAILURE);
+		THROW_MSG(_port, "Failed to set server socket to non-blocking");
 	}
 	// init and bind the socket
 	initSocketId(_serverSocketId);
@@ -45,7 +43,7 @@ void Server::run()
 	if (listen(_serverSocketFd, MAX_QUEUE) == -1)
 	{
 		close(_serverSocketFd);
-		throw std::runtime_error("Can't listen on socket");
+		THROW_MSG(_port, "Failed to listen on socket");
 	}
 	std::cout << "\e[34m[" << _port << "]\e[0m\t" << "\e[2mServer listening \e[0m" << std::endl;
 	// create epoll fd and add server socket to epoll
@@ -60,17 +58,25 @@ void Server::run()
 		{
 			close(_serverSocketFd);
 			close(_epollFd);
-			throw std::runtime_error("Epoll wait failed");
+			THROW_MSG(_port, "Epoll wait failed");
 		}
 		for (int i = 0; i < numEvents; i++)
 		{
 			if (events[i].data.fd == _serverSocketFd)
-				acceptClient(); // wip arrive here for the check of the errors
+				acceptClient();
 			else {
 				if (events[i].events & EPOLLIN)
 				{
-					if (treatMethod(events[i]) == -1)
-						continue;
+					retValue = treatMethod(events[i]);
+					if (retValue == 0)
+						closeClient(events[i]);
+					else if (retValue == -1)
+					{
+						CERR_MSG(_port, "Failed to treat method");
+						closeClient(events[i]);
+					}
+					else if (retValue == -2)
+						CERR_MSG(_port, "405 Method Not Allowed");
 				}
 				else if((events[i].events & EPOLLOUT) || (events[i].events & EPOLLERR))
 					closeClient(events[i]);
@@ -79,40 +85,41 @@ void Server::run()
 	}
 }
 
+
+/// @return	-2 if the method is not allowed
+/// 		-1 if an error function failed
+/// 		0 if the request is a client disconnection
+/// 		1 if the request is treated
 int	Server::treatMethod(struct epoll_event &event)
 {
 	int clientSocketFd = event.data.fd;
-	// read the data from the client
 	char buffer[BUFFER_SIZE] = {0};
 	ssize_t bytesReceived = recv(clientSocketFd, buffer, sizeof(buffer) - 1, 0);
-	//todo check bytesReveived error
 	if (bytesReceived == 0)
-	{
-		std::cout << "\e[34m[" << _port << "]\e[0m\t" << "\e[2mClient disconnected\e[0m" << std::endl;
-		closeClient(event);
 		return (0);
-	}
 	if (bytesReceived < 0)
-	{
-		std::cout << "\e[34m[" << _port << "]\e[0m\t" << "\e[1;37;41mError: 500: Internal error\e[0m" << std::endl;
-		send(clientSocketFd, ERROR_500_RESPONSE.c_str(), ERROR_500_RESPONSE.size(), 0);
 		return (-1);
-	}
 	buffer[bytesReceived] = '\0';
 
 	std::string response = selectMethod(buffer);
 	if (response.empty())
 	{
-		send(clientSocketFd, ERROR_405_RESPONSE.c_str(), ERROR_405_RESPONSE.size(), 0);
-		return (-1); //dev this has to be checked, dont know if it should stop the client connection or not
+		if (send(clientSocketFd, ERROR_405_RESPONSE.c_str(), ERROR_405_RESPONSE.size(), 0) == -1)
+			return (CERR_MSG(_port, "Failed to send error response to client"), -1);
+		return (-2);
 	}
-	send(clientSocketFd, response.c_str(), response.size(), 0);
-	return (0);
+	if (send(clientSocketFd, response.c_str(), response.size(), 0) == -1)
+		return (CERR_MSG(_port, "Failed to send response to client"), -1);
+	return (1);
 }
 
+/// @brief find the method in the request and call the corresponding method
+/// @param buffer header of the request
+/// @return return the response of the method OR an empty string if the method is not allowed
 std::string	Server::selectMethod(char  buffer[BUFFER_SIZE])
 {
 	std::string	request(buffer);
+	std::cout << "\e[34m[" << _port << "]\e[0m\t" << "\e[2mRequest: " << request << "\e[0m" << std::endl;
 	if (request.find("GET") != std::string::npos)
 		return (method::GET(request, _port));
 	else if (request.find("POST") != std::string::npos)
@@ -120,10 +127,7 @@ std::string	Server::selectMethod(char  buffer[BUFFER_SIZE])
 	else if (request.find("DELETE") != std::string::npos)
 		return (method::DELETE(request, _port));
 	else
-	{
-		std::cout << "\e[1;37;41mError: 405: Method not allowed\e[0m" << std::endl;
 		return ("");
-	}
 }
 
 void Server::acceptClient()
@@ -134,20 +138,20 @@ void Server::acceptClient()
 	int clientSocketFd = accept(_serverSocketFd, (struct sockaddr *)&clientSocketId, &clientSocketLength);
 	if (clientSocketFd == -1)
 	{
-		std::cerr << "\e[31m[" << _port << "]\e[0m\t" << "\e[2mFailed to accept client connection\e[0m" << std::endl;
-		return;
+		CERR_MSG(_port, "Failed to accept client connection");
+		return ;
 	}
 	// set the client socket to be non-blocking
 	int retValue = setNonBlocking(clientSocketFd);
 	if (retValue == -1)
 	{
-		std::cout << "\e[31m[" << _port << "]\e[0m\t" << "\e[2mFailed to retrieve socket flags\e[0m" << std::endl;
+		CERR_MSG(_port, "Failed to retrieve socket flags");
 		sendErrorResponse(clientSocketFd, ERROR_500_RESPONSE);
 		return;
 	}
 	else if (retValue == -2)
 	{
-		std::cerr << "\e[31m[" << _port << "]\e[0m\t" << "\e[2mFailed to set client socket to non-blocking\e[0m" << std::endl;
+		CERR_MSG(_port, "Failed to set client socket to non-blocking");
 		sendErrorResponse(clientSocketFd, ERROR_500_RESPONSE);
 		return;
 	}
@@ -157,7 +161,7 @@ void Server::acceptClient()
 	newEventClient.data.fd = clientSocketFd;
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientSocketFd, &newEventClient) == -1)
 	{
-		std::cerr << "\e[31m[" << _port << "]\e[0m\t" << "\e[2mFailed to add client socket to epoll\e[0m" << std::endl;
+		CERR_MSG(_port, "Failed to add client socket to epoll");
 		sendErrorResponse(clientSocketFd, ERROR_500_RESPONSE);
 		return;
 	}
@@ -169,9 +173,7 @@ void Server::acceptClient()
 void Server::sendErrorResponse(int clientSocketFd, const std::string &errorResponse)
 {
 	if (send(clientSocketFd, errorResponse.c_str(), errorResponse.size(), 0) == -1)
-	{
-		std::cerr << "\e[31m[" << _port << "]\e[0m\t" << "\e[2mFailed to send error response to client\e[0m" << std::endl;
-	}
+		CERR_MSG(_port, "Failed to send error response to client");
 	close(clientSocketFd);
 }
 
@@ -181,8 +183,9 @@ void Server::closeClient(struct epoll_event &event)
 	if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientSocketFd, NULL) == -1)
 	{
 		close(clientSocketFd);
-		throw std::runtime_error("Failed to remove client socket from epoll");
+		THROW_MSG(_port, "Failed to remove client socket from epoll");
 	}
+	COUT_MSG(_port, "Client disconnected");
 	_clients.erase(clientSocketFd);
 	close(clientSocketFd);
 }
@@ -193,7 +196,7 @@ void Server::createEpollFd()
 	if (_epollFd == -1)
 	{
 		close(_serverSocketFd);
-		throw std::runtime_error("Epoll create failed");
+		THROW_MSG(_port, "Epoll create failed");
 	}
 }
 
@@ -202,11 +205,11 @@ void Server::addServerSocketToEpoll()
 	struct epoll_event	event;
 	event.events = EPOLLIN;
 	event.data.fd = _serverSocketFd;
-	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _serverSocketFd, &event) == 0)
+	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _serverSocketFd, &event) == -1)
 	{
 		close(_serverSocketFd);
 		close(_epollFd);
-		throw std::runtime_error("Failed to add server socket to epoll");
+		THROW_MSG(_port, "Failed to add server socket to epoll");
 	}
 }
 
@@ -225,15 +228,15 @@ void Server::bindSocketFdWithID()
 	{
 		close(_serverSocketFd);
 		if (errno == EADDRINUSE)
-			throw std::runtime_error("Port already in use");
+			THROW_MSG(_port, "Port already in use");
 		else
-			throw std::runtime_error("Can't bind socket");
+			THROW_MSG(_port, "Failed to bind socket");
 	}
 }
 void Server::initSocketId(struct sockaddr_in &socketId)
 {
 	if (memset(&socketId, 0, sizeof(socketId)) == NULL)
-		throw std::runtime_error("Failed to initialize a socket structure");
+		THROW_MSG(_port, "Failed to initialize socket structure");
 	socketId.sin_family = AF_INET;
 	socketId.sin_port = htons(_port);
 	socketId.sin_addr.s_addr = INADDR_ANY;

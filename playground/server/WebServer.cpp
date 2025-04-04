@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 15:55:05 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/03 22:58:36 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/04 13:10:03 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,7 +51,7 @@ void WebServer::start()
 	}
 	catch (const std::runtime_error& e)
 	{
-		std::cerr << "\e[1;37;41mError: " << e.what() << "\e[0m" << std::endl; // todo change msg
+		std::cerr << e.what() << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	catch (const std::exception& e)
