@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include <fstream>
+#include <cstring>
 #include "../networking/sockets/AllSockets.hpp"
 
 namespace http {

@@ -1,9 +1,9 @@
 #include "../../includes/parsing/Parsing.hpp"
 
 void trim(std::string &str) {
-    while (!str.empty() && (str.back() == ' ' || str.back() == '\t' || str.back() == ';'))
-        str.pop_back();
-    while (!str.empty() && (str.front() == ' ' || str.front() == '\t'))
+    while (!str.empty() && (str[str.size() - 1] == ' ' || str[str.size() - 1] == '\t' || str[str.size() - 1] == ';'))
+        str.erase(str.size() - 1);
+    while (!str.empty() && (str[0] == ' ' || str[0] == '\t'))
         str.erase(str.begin());
 }
 
@@ -96,7 +96,7 @@ void parseHttpBlock(std::ifstream &path) {
 }
 
 int readConfig(std::string configPath) {
-    std::ifstream path(configPath);
+    std::ifstream path(configPath.c_str());
     if (!path.is_open()) {
         std::cerr << "Error: Unable to open config file." << std::endl;
         return 1;

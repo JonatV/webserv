@@ -1,4 +1,5 @@
 #include "../../includes/server/Server.hpp"
+#include "../../includes/tools/stringManipulation.hpp"
 
 http::Server::Server() : SimpleServer(AF_INET, SOCK_STREAM, 0, 2121, INADDR_ANY, 10) {
     launch();
@@ -51,7 +52,7 @@ void http::Server::handler() {
 
 void http::Server::notFound(int clientSocket) {
     std::ifstream notFoundFile("./config/content/www/404error.html");
-    
+
     if (notFoundFile.is_open()) {
         std::stringstream buffer;
         buffer << notFoundFile.rdbuf();
@@ -87,7 +88,7 @@ void http::Server::responder(int clientSocket) {
     }
 
     if (!filePath.empty()) {
-        std::ifstream file(filePath);
+        std::ifstream file(filePath.c_str());
         if (file.is_open()) {
             std::stringstream buffer;
             buffer << file.rdbuf();
@@ -95,7 +96,7 @@ void http::Server::responder(int clientSocket) {
             std::string response = 
                 "HTTP/1.1 200 OK\r\n"
                 "Content-Type: " + getContentType(filePath) + "\r\n"
-                "Content-Length: " + std::to_string(fileContent.length()) + "\r\n"
+                "Content-Length: " + to_string(fileContent.length()) + "\r\n"
                 "\r\n" + fileContent;
             write(clientSocket, response.c_str(), response.length());
         } else {
