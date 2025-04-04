@@ -1,34 +1,45 @@
-CXX = c++
-CXXFLAGS = -std=c++98 -Werror -Wextra -Wall
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    Makefile                                           :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2024/12/19 16:57:04 by jveirman          #+#    #+#              #
+#    Updated: 2025/04/04 15:20:33 by jveirman         ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
+SRCS = main.cpp \
+		server/WebServer.cpp \
+		server/Server.cpp \
+		server/Client.cpp \
+		server/method.cpp \
+		server/utils.cpp
 NAME = webserv
-FILES = main.cpp
-SOCKETS = src/networking/sockets/Socket.cpp \
-		src/networking/sockets/ConnectingSocket.cpp \
-		src/networking/sockets/ListeningSocket.cpp \
-		src/networking/sockets/BindingSocket.cpp \
-		src/server/PollHandler.cpp
+CC = c++
+CFLAGS = -Wall -Wextra -Werror
+STD = -std=c++98
+ifdef DEV
+	DEV_FLAGS = -g3 -fsanitize=address
+	# DEV_FLAGS = -Wno-shadow
+else
+	DEV_FLAGS =
+endif
 
-SERVER = src/server/SimpleServer.cpp \
-		src/server/Server.cpp \
-
-PARSING = src/parsing/Parsing.cpp
-
-OBJS = $(FILES:.cpp=.o)
+OBJS = $(SRCS:.cpp=.o)
 
 all: $(NAME)
 
 $(NAME): $(OBJS)
-		$(CXX) $(CXXFLAGS) $(SERVER) $(SOCKETS) $(PARSING) $(FILES) -o $(NAME)
+	$(CC) $(CFLAGS) $(STD) $(DEV_FLAGS) $(OBJS) -o $(NAME)
 
-src/%.o: %.cpp
-		$(CXX) $(CXXFLAGS) -c $<
+%.o: %.cpp
+	$(CC) $(CFLAGS) $(STD) $(DEV_FLAGS) -c $< -o $@
 
 clean:
-		rm -f $(OBJS)
-
-re: clean all
-
-fclean : clean 
-		rm -f $(NAME)
-
+	rm -f $(OBJS)
+fclean : clean
+	rm -f $(NAME)
+re: fclean all
 .PHONY: all clean fclean re
