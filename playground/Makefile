@@ -6,7 +6,7 @@
 #    By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/19 16:57:04 by jveirman          #+#    #+#              #
-#    Updated: 2025/04/02 03:55:20 by jveirman         ###   ########.fr        #
+#    Updated: 2025/04/04 13:05:56 by jveirman         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -14,7 +14,8 @@ SRCS = main.cpp \
 		server/WebServer.cpp \
 		server/Server.cpp \
 		server/Client.cpp \
-		server/method.cpp
+		server/method.cpp \
+		server/utils.cpp
 NAME = web
 CC = c++
 CFLAGS = -Wall -Wextra -Werror

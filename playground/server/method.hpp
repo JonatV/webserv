@@ -1,6 +1,7 @@
 #ifndef METHOD_HPP
 #define METHOD_HPP
 
+#include "utils.hpp"
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -79,15 +80,7 @@ namespace method
 	// CGI
 	std::string handleCGI(const std::string& request, int port);
 
-	// helper
-	std::string gnl(std::ifstream& file);
-	template <typename T>
-	std::string to_string(const T& value)
-	{
-		std::ostringstream	oss;
-		oss << value;
-		return (oss.str());
-	}
+
 }
 
 #endif
