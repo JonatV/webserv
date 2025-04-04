@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:10 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/04 12:47:53 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/04 16:23:10 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,6 @@ Config::~Config() {
 std::vector<std::string>	*Config::getTokensFromFile(std::ifstream& file) {
     std::vector<std::string> *tokens = new std::vector<std::string>();
     std::string line, word;
-    bool inComment = false;
     int lineNum = 0;
     
     while (std::getline(file, line)) {
@@ -101,7 +100,7 @@ std::vector<std::string>	*Config::getTokensFromFile(std::ifstream& file) {
             throw ConfigException(ERROR_FILE_MALFORMED); // Unbalanced braces
         }
     }
-    
+
     if (braceCount != 0) {
         throw ConfigException(ERROR_UNEXPECTED_EOF); // Unclosed braces at end of file
     }
@@ -414,41 +413,41 @@ void Config::displayConfig() const {
     std::cout << "==== END OF CONFIGURATION ====" << std::endl;
 }
 
-int main(int argc, char **argv) {
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
-        return 1;
-    }
+// int main(int argc, char **argv) {
+//     if (argc != 2) {
+//         std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
+//         return 1;
+//     }
 
-    Config config;
+//     Config config;
 
-    try {
-        bool *resultPtr = config.parseFile(argv[1]);
-        bool result = *resultPtr;
-        delete resultPtr;
+//     try {
+//         bool *resultPtr = config.parseFile(argv[1]);
+//         bool result = *resultPtr;
+//         delete resultPtr;
         
-        if (result) {
-            std::cout << "Configuration successfully parsed." << std::endl;
-            config.displayConfig();
-            return 0;
-        }
-    } 
-    catch (Config::ConfigException& e) {
-        std::cerr << "Error parsing configuration: " << e.what() << " (code: " << e.getCode() << ")" << std::endl;
-        return 1;
-    }
-    catch (ServerConfig::ConfigException& e) {
-        std::cerr << "Error parsing server configuration: " << e.what() << " (code: " << e.getCode() << ")" << std::endl;
-        return 1;
-    }
-    catch (LocationConfig::ConfigException& e) {
-        std::cerr << "Error parsing location configuration: " << e.what() << " (code: " << e.getCode() << ")" << std::endl;
-        return 1;
-    }
-    catch (const std::exception& e) {
-        std::cerr << "Unexpected error: " << e.what() << std::endl;
-        return 1;
-    }
+//         if (result) {
+//             std::cout << "Configuration successfully parsed." << std::endl;
+//             config.displayConfig();
+//             return 0;
+//         }
+//     } 
+//     catch (Config::ConfigException& e) {
+//         std::cerr << "Error parsing configuration: " << e.what() << " (code: " << e.getCode() << ")" << std::endl;
+//         return 1;
+//     }
+//     catch (ServerConfig::ConfigException& e) {
+//         std::cerr << "Error parsing server configuration: " << e.what() << " (code: " << e.getCode() << ")" << std::endl;
+//         return 1;
+//     }
+//     catch (LocationConfig::ConfigException& e) {
+//         std::cerr << "Error parsing location configuration: " << e.what() << " (code: " << e.getCode() << ")" << std::endl;
+//         return 1;
+//     }
+//     catch (const std::exception& e) {
+//         std::cerr << "Unexpected error: " << e.what() << std::endl;
+//         return 1;
+//     }
 
-    return 0;
-}
+//     return 0;
+// }

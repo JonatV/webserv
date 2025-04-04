@@ -6,7 +6,7 @@
 #    By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/19 16:57:04 by jveirman          #+#    #+#              #
-#    Updated: 2025/04/04 15:20:33 by jveirman         ###   ########.fr        #
+#    Updated: 2025/04/04 16:22:48 by jveirman         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -15,11 +15,15 @@ SRCS = main.cpp \
 		server/Server.cpp \
 		server/Client.cpp \
 		server/method.cpp \
-		server/utils.cpp
+		server/utils.cpp \
+		parse/Config.cpp \
+		parse/ServerConfig.cpp \
+		parse/LocationConfig.cpp
+
 NAME = webserv
 CC = c++
 CFLAGS = -Wall -Wextra -Werror
-STD = -std=c++98
+STD =#-std=c++98
 ifdef DEV
 	DEV_FLAGS = -g3 -fsanitize=address
 	# DEV_FLAGS = -Wno-shadow

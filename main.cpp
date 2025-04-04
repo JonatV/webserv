@@ -6,11 +6,14 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/02 02:47:49 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/04 16:14:37 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/04 16:20:26 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "server/WebServer.hpp"
+#include "parse/Config.hpp"
+#include "parse/LocationConfig.hpp"
+#include "parse/ServerConfig.hpp"
 #include <iostream>
 #include <stdlib.h>
 #include <vector>
