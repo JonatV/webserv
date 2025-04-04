@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:17 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/04 12:32:04 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/04 12:47:56 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,11 +14,11 @@
 
 // ServerConfig Constructor & Destructor
 ServerConfig::ServerConfig() : _clientBodyLimit(0) {
-    // Initialize with default values
+	// Initialize with default values
 }
 
 ServerConfig::~ServerConfig() {
-    // Clean up if needed
+	// Clean up if needed
 }
 
 // Parse port number(s) from configuration tokens
