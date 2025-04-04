@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:17 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/03 11:54:14 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/04 12:32:04 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,10 +22,10 @@ ServerConfig::~ServerConfig() {
 }
 
 // Parse port number(s) from configuration tokens
-int	ServerConfig::_getPort(std::vector<std::string> tokens, size_t i) {
+int *ServerConfig::getPort(std::vector<std::string> tokens, size_t i) {
     // Check if we have enough tokens
     if (i + 1 >= tokens.size()) {
-        throw ERROR_INVALID_PORT;
+        throw ConfigException(ERROR_INVALID_PORT);
     }
     
     int port = -1;
@@ -39,25 +39,26 @@ int	ServerConfig::_getPort(std::vector<std::string> tokens, size_t i) {
         
         // Basic port validation
         if (port < 0 || port > 65535) {
-            throw ERROR_INVALID_PORT;
+            throw ConfigException(ERROR_INVALID_PORT);
         }
     } catch (std::exception& e) {
-        throw ERROR_INVALID_PORT;
+        throw ConfigException(ERROR_INVALID_PORT);
     }
     
     // Check for semicolon
     if (i + 1 < tokens.size() && tokens[i + 1] != ";") {
-        throw ERROR_INVALID_PORT; // Missing semicolon
+        throw ConfigException(ERROR_INVALID_PORT); // Missing semicolon
     }
     
-    return port;
+    int *result = new int(port);
+    return result;
 }
 
 // Parse host address from configuration tokens
-std::string	ServerConfig::_getHost(std::vector<std::string> tokens, size_t i) {
+std::string *ServerConfig::getHost(std::vector<std::string> tokens, size_t i) {
     // Check if we have enough tokens
     if (i + 1 >= tokens.size()) {
-        throw ERROR_INVALID_HOST;
+        throw ConfigException(ERROR_INVALID_HOST);
     }
     
     // Skip the "host" token
@@ -67,22 +68,23 @@ std::string	ServerConfig::_getHost(std::vector<std::string> tokens, size_t i) {
     
     // Basic host validation (could be expanded)
     if (host.empty()) {
-        throw ERROR_INVALID_HOST;
+        throw ConfigException(ERROR_INVALID_HOST);
     }
     
     // Check for semicolon
     if (i + 1 < tokens.size() && tokens[i + 1] != ";") {
-        throw ERROR_INVALID_HOST; // Missing semicolon
+        throw ConfigException(ERROR_INVALID_HOST); // Missing semicolon
     }
     
-    return host;
+    std::string *result = new std::string(host);
+    return result;
 }
 
 // Parse client body size limit from configuration tokens
-size_t	ServerConfig::_getClientBodyLimit(std::vector<std::string> tokens, size_t i) {
+size_t *ServerConfig::getClientBodyLimit(std::vector<std::string> tokens, size_t i) {
     // Check if we have enough tokens
     if (i + 1 >= tokens.size()) {
-        throw ERROR_INVALID_CLIENT_MAX_BODY_SIZE;
+        throw ConfigException(ERROR_INVALID_CLIENT_MAX_BODY_SIZE);
     }
     
     // Skip the "client_max_body_size" token
@@ -96,25 +98,26 @@ size_t	ServerConfig::_getClientBodyLimit(std::vector<std::string> tokens, size_t
         
         // Basic validation
         if (limit == 0) {
-            throw ERROR_INVALID_CLIENT_MAX_BODY_SIZE;
+            throw ConfigException(ERROR_INVALID_CLIENT_MAX_BODY_SIZE);
         }
     } catch (std::exception& e) {
-        throw ERROR_INVALID_CLIENT_MAX_BODY_SIZE;
+        throw ConfigException(ERROR_INVALID_CLIENT_MAX_BODY_SIZE);
     }
     
     // Check for semicolon
     if (i + 1 < tokens.size() && tokens[i + 1] != ";") {
-        throw ERROR_INVALID_CLIENT_MAX_BODY_SIZE; // Missing semicolon
+        throw ConfigException(ERROR_INVALID_CLIENT_MAX_BODY_SIZE); // Missing semicolon
     }
     
-    return limit;
+    size_t *result = new size_t(limit);
+    return result;
 }
 
 // Parse server name from configuration tokens
-std::string	ServerConfig::_getServerName(std::vector<std::string> tokens, size_t i) {
+std::string *ServerConfig::getServerName(std::vector<std::string> tokens, size_t i) {
     // Check if we have enough tokens
     if (i + 1 >= tokens.size()) {
-        throw ERROR_INVALID_SERVER_NAME;
+        throw ConfigException(ERROR_INVALID_SERVER_NAME);
     }
     
     // Skip the "server_name" token
@@ -124,24 +127,25 @@ std::string	ServerConfig::_getServerName(std::vector<std::string> tokens, size_t
     
     // Basic validation
     if (name.empty()) {
-        throw ERROR_INVALID_SERVER_NAME;
+        throw ConfigException(ERROR_INVALID_SERVER_NAME);
     }
     
     // Check for semicolon
     if (i + 1 < tokens.size() && tokens[i + 1] != ";") {
-        throw ERROR_INVALID_SERVER_NAME; // Missing semicolon
+        throw ConfigException(ERROR_INVALID_SERVER_NAME); // Missing semicolon
     }
     
-    return name;
+    std::string *result = new std::string(name);
+    return result;
 }
 
 // Parse location configuration from tokens
-std::map<std::string, LocationConfig>	ServerConfig::_getLocationConfig(std::vector<std::string> tokens, size_t& i) {
-    std::map<std::string, LocationConfig> locations;
+std::map<std::string, LocationConfig> *ServerConfig::getLocationConfig(std::vector<std::string> tokens, size_t& i) {
+    std::map<std::string, LocationConfig> *locations = new std::map<std::string, LocationConfig>();
     
     // Check if we have enough tokens
     if (i + 1 >= tokens.size()) {
-        throw LocationConfig::ERROR_INVALID_PREFIX;
+        throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_PREFIX);
     }
     
     // Path for this location
@@ -150,7 +154,7 @@ std::map<std::string, LocationConfig>	ServerConfig::_getLocationConfig(std::vect
     
     // Check for opening brace
     if (i >= tokens.size() || tokens[i] != "{") {
-        throw LocationConfig::ERROR_INVALID_LOCATION_BLOCK;
+        throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_LOCATION_BLOCK);
     }
     
     i++; // Skip the opening brace
@@ -162,14 +166,14 @@ std::map<std::string, LocationConfig>	ServerConfig::_getLocationConfig(std::vect
         if (tokens[i] == "index") {
             // Parse index directive
             if (i + 1 >= tokens.size()) {
-                throw LocationConfig::ERROR_INVALID_INDEX_FILES;
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_INDEX_FILES);
             }
             
             i++; // Skip "index"
             std::string index = tokens[i];
             
             if (index.empty()) {
-                throw LocationConfig::ERROR_INVALID_INDEX_FILES;
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_INDEX_FILES);
             }
             
             locationConfig._index = index;
@@ -179,13 +183,13 @@ std::map<std::string, LocationConfig>	ServerConfig::_getLocationConfig(std::vect
             if (i < tokens.size() && tokens[i] == ";") {
                 i++;
             } else {
-                throw LocationConfig::ERROR_INVALID_INDEX_FILES; // Missing semicolon
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_INDEX_FILES); // Missing semicolon
             }
         } 
         else if (tokens[i] == "allowed_methods") {
             // Parse allowed methods
             if (i + 1 >= tokens.size()) {
-                throw LocationConfig::ERROR_INVALID_ALLOWED_METHODS;
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_ALLOWED_METHODS);
             }
             
             i++; // Skip "allowed_methods"
@@ -197,7 +201,7 @@ std::map<std::string, LocationConfig>	ServerConfig::_getLocationConfig(std::vect
                 std::string method = tokens[i];
                 if (method != "GET" && method != "POST" && method != "PUT" && 
                     method != "DELETE" && method != "HEAD") {
-                    throw LocationConfig::ERROR_INVALID_ALLOWED_METHODS;
+                    throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_ALLOWED_METHODS);
                 }
                 
                 locationConfig._allowedMethods.push_back(method);
@@ -206,27 +210,27 @@ std::map<std::string, LocationConfig>	ServerConfig::_getLocationConfig(std::vect
             }
             
             if (!foundMethod) {
-                throw LocationConfig::ERROR_INVALID_ALLOWED_METHODS;
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_ALLOWED_METHODS);
             }
             
             // Skip semicolon
             if (i < tokens.size() && tokens[i] == ";") {
                 i++;
             } else {
-                throw LocationConfig::ERROR_INVALID_ALLOWED_METHODS; // Missing semicolon
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_ALLOWED_METHODS); // Missing semicolon
             }
         } 
         else if (tokens[i] == "root") {
             // Parse root directive
             if (i + 1 >= tokens.size()) {
-                throw LocationConfig::ERROR_INVALID_ROOT_PATH;
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_ROOT_PATH);
             }
             
             i++; // Skip "root"
             std::string root = tokens[i];
             
             if (root.empty()) {
-                throw LocationConfig::ERROR_INVALID_ROOT_PATH;
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_ROOT_PATH);
             }
             
             locationConfig._root = root;
@@ -236,13 +240,13 @@ std::map<std::string, LocationConfig>	ServerConfig::_getLocationConfig(std::vect
             if (i < tokens.size() && tokens[i] == ";") {
                 i++;
             } else {
-                throw LocationConfig::ERROR_INVALID_ROOT_PATH; // Missing semicolon
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_ROOT_PATH); // Missing semicolon
             }
         } 
         else if (tokens[i] == "autoindex") {
             // Parse autoindex directive
             if (i + 1 >= tokens.size()) {
-                throw LocationConfig::ERROR_INVALID_AUTOINDEX;
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_AUTOINDEX);
             }
             
             i++; // Skip "autoindex"
@@ -252,7 +256,7 @@ std::map<std::string, LocationConfig>	ServerConfig::_getLocationConfig(std::vect
             } else if (tokens[i] == "off") {
                 locationConfig._autoindex = false;
             } else {
-                throw LocationConfig::ERROR_INVALID_AUTOINDEX;
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_AUTOINDEX);
             }
             
             i++; // Move to next token
@@ -261,13 +265,13 @@ std::map<std::string, LocationConfig>	ServerConfig::_getLocationConfig(std::vect
             if (i < tokens.size() && tokens[i] == ";") {
                 i++;
             } else {
-                throw LocationConfig::ERROR_INVALID_AUTOINDEX; // Missing semicolon
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_AUTOINDEX); // Missing semicolon
             }
         }
         else if (tokens[i] == "return") {
             // Parse redirection
             if (i + 2 >= tokens.size()) {
-                throw LocationConfig::ERROR_INVALID_REDIRECT;
+                throw ConfigException(ERROR_INVALID_REDIRECT);
             }
             
             i += 3; // Skip "return", code, and URL
@@ -276,13 +280,13 @@ std::map<std::string, LocationConfig>	ServerConfig::_getLocationConfig(std::vect
             if (i < tokens.size() && tokens[i] == ";") {
                 i++;
             } else {
-                throw LocationConfig::ERROR_INVALID_REDIRECT; // Missing semicolon
+                throw ConfigException(ERROR_INVALID_REDIRECT); // Missing semicolon
             }
         }
         else if (tokens[i] == "cgi_path") {
             // Parse CGI path
             if (i + 1 >= tokens.size()) {
-                throw LocationConfig::ERROR_INVALID_CGI_PATH;
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_CGI_PATH);
             }
             
             i += 2; // Skip "cgi_path" and the path
@@ -291,13 +295,13 @@ std::map<std::string, LocationConfig>	ServerConfig::_getLocationConfig(std::vect
             if (i < tokens.size() && tokens[i] == ";") {
                 i++;
             } else {
-                throw LocationConfig::ERROR_INVALID_CGI_PATH; // Missing semicolon
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_CGI_PATH); // Missing semicolon
             }
         }
         else if (tokens[i] == "upload_path") {
             // Parse upload path
             if (i + 1 >= tokens.size()) {
-                throw LocationConfig::ERROR_INVALID_UPLOAD_PATH;
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_UPLOAD_PATH);
             }
             
             i += 2; // Skip "upload_path" and the path
@@ -306,38 +310,38 @@ std::map<std::string, LocationConfig>	ServerConfig::_getLocationConfig(std::vect
             if (i < tokens.size() && tokens[i] == ";") {
                 i++;
             } else {
-                throw LocationConfig::ERROR_INVALID_UPLOAD_PATH; // Missing semicolon
+                throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_UPLOAD_PATH); // Missing semicolon
             }
         }
         else {
             // Unknown directive in location block
-            throw LocationConfig::ERROR_UNKNOWN_KEY;
+            throw LocationConfig::ConfigException(LocationConfig::ERROR_UNKNOWN_KEY);
         }
     }
     
     // Check if we reached the end of tokens without finding closing brace
     if (i >= tokens.size()) {
-        throw LocationConfig::ERROR_INVALID_LOCATION_BLOCK;
+        throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_LOCATION_BLOCK);
     }
     
     // Check for empty or incomplete configuration
     if (locationConfig._root.empty()) {
-        throw LocationConfig::ERROR_INVALID_ROOT_PATH;
+        throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_ROOT_PATH);
     }
     
     // Check for duplicate locations
-    if (locations.find(path) != locations.end()) {
-        throw LocationConfig::ERROR_DUPLICATE_LOCATION;
+    if (locations->find(path) != locations->end()) {
+        throw LocationConfig::ConfigException(LocationConfig::ERROR_DUPLICATE_LOCATION);
     }
     
     // Add this location config to map
-    locations[path] = locationConfig;
+    (*locations)[path] = locationConfig;
     
     // Skip the closing brace
     if (tokens[i] == "}") {
         i++;
     } else {
-        throw LocationConfig::ERROR_INVALID_LOCATION_BLOCK;
+        throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_LOCATION_BLOCK);
     }
     
     return locations;

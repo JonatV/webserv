@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/03/31 19:28:11 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/04 12:32:32 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@ LocationConfig::~LocationConfig() {
 }
 
 // Parse index file from configuration tokens
-std::string	LocationConfig::_getIndex(std::vector<std::string> tokens) {
+std::string *LocationConfig::getIndex(std::vector<std::string> tokens) {
 	std::string index;
 
 	// Find index directive and get value
@@ -35,14 +35,15 @@ std::string	LocationConfig::_getIndex(std::vector<std::string> tokens) {
 	}
 
 	if (index.empty()) {
-		throw ERROR_INVALID_INDEX_FILES;
+		throw ConfigException(ERROR_INVALID_INDEX_FILES);
 	}
 
-	return index;
+	std::string *result = new std::string(index);
+	return result;
 }
 
 // Parse allowed HTTP methods from configuration tokens
-std::string	LocationConfig::_getAllowedMethods(std::vector<std::string> tokens) {
+std::string *LocationConfig::getAllowedMethods(std::vector<std::string> tokens) {
 	std::string methods;
 
 	// Find allowed_methods directive and collect values
@@ -61,7 +62,7 @@ std::string	LocationConfig::_getAllowedMethods(std::vector<std::string> tokens) 
 	}
 
 	if (methods.empty()) {
-		throw ERROR_INVALID_ALLOWED_METHODS;
+		throw ConfigException(ERROR_INVALID_ALLOWED_METHODS);
 	}
 
 	// Remove trailing space
@@ -69,11 +70,12 @@ std::string	LocationConfig::_getAllowedMethods(std::vector<std::string> tokens) 
 		methods.pop_back();
 	}
 
-	return methods;
+	std::string *result = new std::string(methods);
+	return result;
 }
 
 // Parse root directory from configuration tokens
-std::string	LocationConfig::_getRoot(std::vector<std::string> tokens) {
+std::string *LocationConfig::getRoot(std::vector<std::string> tokens) {
 	std::string root;
 
 	// Find root directive and get value
@@ -89,14 +91,15 @@ std::string	LocationConfig::_getRoot(std::vector<std::string> tokens) {
 	}
 
 	if (root.empty()) {
-		throw ERROR_INVALID_ROOT_PATH;
+		throw ConfigException(ERROR_INVALID_ROOT_PATH);
 	}
 
-	return root;
+	std::string *result = new std::string(root);
+	return result;
 }
 
 // Parse autoindex flag from configuration tokens
-bool	LocationConfig::_getAutoIndex(std::vector<std::string> tokens) {
+bool *LocationConfig::getAutoIndex(std::vector<std::string> tokens) {
 	bool autoindex = false;
 
 	// Find autoindex directive and get value
@@ -109,12 +112,13 @@ bool	LocationConfig::_getAutoIndex(std::vector<std::string> tokens) {
 			} else if (value == "off") {
 				autoindex = false;
 			} else {
-				throw ERROR_INVALID_AUTOINDEX;
+				throw ConfigException(ERROR_INVALID_AUTOINDEX);
 			}
 			
 			break;
 		}
 	}
 
-	return autoindex;
+	bool *result = new bool(autoindex);
+	return result;
 }

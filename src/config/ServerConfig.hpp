@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/03 11:45:23 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/04 12:31:41 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,12 +29,11 @@ class ServerConfig {
 		std::map<std::string, LocationConfig>	_locations;
 
 		// Functions to parse Server
-		std::map<std::string, LocationConfig>	_getLocationConfig(std::vector<std::string> tokens, size_t& i);
-		int										_getPort(std::vector<std::string> tokens, size_t i);
-		std::string								_getHost(std::vector<std::string> tokens, size_t i);
-		size_t									_getClientBodyLimit(std::vector<std::string> tokens, size_t i);
-		std::string								_getServerName(std::vector<std::string> tokens, size_t i);
-
+		std::map<std::string, LocationConfig>	*getLocationConfig(std::vector<std::string> tokens, size_t& i);
+		int										*getPort(std::vector<std::string> tokens, size_t i);
+		std::string								*getHost(std::vector<std::string> tokens, size_t i);
+		size_t									*getClientBodyLimit(std::vector<std::string> tokens, size_t i);
+		std::string								*getServerName(std::vector<std::string> tokens, size_t i);
 
 	public:
 		ServerConfig();
@@ -45,25 +44,61 @@ class ServerConfig {
 		
 		// Different possible errors for the server part of the config file
 		enum e_error {
-			ERROR_NONE,
+			ERROR_NONE = 0,
 
 			// Server Errors
-			ERROR_INVALID_SERVER_BLOCK,
+			ERROR_INVALID_SERVER_BLOCK = 100,
 			ERROR_INVALID_PORT,
 			ERROR_INVALID_HOST,
 			ERROR_DUPLICATE_SERVER,
 			ERROR_INVALID_SERVER_NAME,
 
 			// Routing & Redirection Errors
-			ERROR_INVALID_REDIRECT,
+			ERROR_INVALID_REDIRECT = 110,
 			ERROR_LOOPING_REDIRECT,
 
 			// Security & Limits
-			ERROR_INVALID_CLIENT_MAX_BODY_SIZE,
+			ERROR_INVALID_CLIENT_MAX_BODY_SIZE = 120,
 
 			// Configuration Key Errors
-    		ERROR_UNKNOWN_KEY 
+    		ERROR_UNKNOWN_KEY = 130
 		};
+		
+		// Custom exception class
+		class ConfigException : public std::exception {
+			private:
+				e_error _code;
+			
+			public:
+				ConfigException(e_error code) : _code(code) {}
+				
+				e_error getCode() const { return _code; }
+				
+				const char* what() const throw() {
+					switch (_code) {
+						case ERROR_INVALID_SERVER_BLOCK:
+							return "Invalid server block configuration";
+						case ERROR_INVALID_PORT:
+							return "Invalid port configuration";
+						case ERROR_INVALID_HOST:
+							return "Invalid host configuration";
+						case ERROR_DUPLICATE_SERVER:
+							return "Duplicate server name or server:port combination";
+						case ERROR_INVALID_SERVER_NAME:
+							return "Invalid server name";
+						case ERROR_INVALID_REDIRECT:
+							return "Invalid redirection in server block";
+						case ERROR_LOOPING_REDIRECT:
+							return "Redirect loop detected in server block";
+						case ERROR_INVALID_CLIENT_MAX_BODY_SIZE:
+							return "Invalid client_max_body_size value";
+						case ERROR_UNKNOWN_KEY:
+							return "Unknown directive in server block";
+						default:
+							return "Unknown server configuration error";
+					}
+				}
+			};
 };
 
 #endif
