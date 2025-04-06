@@ -4,7 +4,7 @@ std::string method::GET(const std::string& request, int port)
 {
 	if (!PARSER_GET_RIGHT) throw std::runtime_error(ERROR_403_RESPONSE);
 	std::string	filePath;
-
+	std::cout << request << std::endl;
 	size_t start = request.find("GET") + 4; // 4 is to go after "GET "
 	if (start == std::string::npos) throw std::runtime_error(ERROR_400_RESPONSE);
 	size_t end = request.find(" ", start);
@@ -26,7 +26,7 @@ std::string method::GET(const std::string& request, int port)
 		filePath = "./www/error_pages/404error.html";
 	else
 		filePath = "";
-	if (path.find("cgi-bin") != std::string::npos)
+	if (path.find("cgi-bin") != std::string::npos) // todo
 		return (method::handleCGI(path, port));
 	if (!filePath.empty())
 		return (method::foundPage(filePath, port));
@@ -96,24 +96,23 @@ std::string method::getErrorHtml(int port, const std::string& errorMessage)
 
 std::string method::POST(const std::string& request, int port)
 {
-	if (!PARSER_POST_RIGHT) return (ERROR_403_RESPONSE);
+	if (!PARSER_POST_RIGHT) throw std::runtime_error(ERROR_403_RESPONSE);
+	
 	if (request.find("POST /delete") != std::string::npos)
 	{
 		std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST request for delete\e[0m" << std::endl;
 		return (handleDeleteRequest(request));
 	}
-	
 	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST request\e[0m" << std::endl;
 	std::string	content;
 	size_t start = request.find("MSG_TEXTAREA=");
 	if (start == std::string::npos || request.find("application/x-www-form-urlencoded") == std::string::npos)
-		return (ERROR_400_RESPONSE); // bad request
+		throw std::runtime_error(ERROR_400_RESPONSE);
 	content = request.substr(start + std::string("MSG_TEXTAREA=").length());
-	std::cout << "\t\e[2mcontent: " << content << "\e[0m" << std::endl;
 	ssize_t bytesReceived = content.length();
 	if (bytesReceived > PARSER_MAX_PAYLOAD)
-		return (ERROR_413_RESPONSE);
-	std::string		fileName = "./www/tmp/" + to_string(time(0)) + ".txt";
+		throw std::runtime_error(ERROR_413_RESPONSE);
+	std::string	fileName = "./www/tmp/" + to_string(time(0)) + ".txt"; // todo check if the path needs to be dynamic
 	while (std::ifstream(fileName.c_str()))
 		fileName = "./www/tmp/" + to_string(time(0)) + ".txt";
 	std::ofstream	file(fileName.c_str());
@@ -121,15 +120,10 @@ std::string method::POST(const std::string& request, int port)
 	{
 		file << content;
 		file.close();
-		return (
-			"HTTP/1.1 303 See Other\r\n"
-			"Content-Type: text/html\r\n"
-			"Content-Length: 0\r\n"
-			"Location: /dashboard.html\r\n"
-			"\r\n");
+		return (POST_303_RESPONSE("/dashboard.html"));
 	}
 	else
-		return (ERROR_500_RESPONSE);
+		throw std::runtime_error(ERROR_404_RESPONSE);
 }
 
 /*
@@ -141,16 +135,12 @@ std::string method::POST(const std::string& request, int port)
 */
 std::string method::handleDeleteRequest(const std::string& request)
 {
-	if (!PARSER_DELETE_RIGHT) return (ERROR_403_RESPONSE);
+	if (!PARSER_DELETE_RIGHT) throw std::runtime_error(ERROR_403_RESPONSE);
+	
 	if (request.find("Content-Length: 0") != std::string::npos)
-		return (
-			"HTTP/1.1 200 OK\r\n"
-			"Content-Type: text/html\r\n"
-			"Content-Length: 0\r\n"
-			"Location: /delete.html\r\n"
-			"\r\n");
+		return (POST_303_RESPONSE("/delete.html"));
 	if (request.find("=on") == std::string::npos)
-		return (ERROR_400_RESPONSE);
+		throw std::runtime_error(ERROR_400_RESPONSE);
 	std::string body = request.substr(request.find("\r\n\r\n") + 4);
 	std::vector<std::string> targetFiles;
 	if (body.find("=on&") != std::string::npos)
@@ -184,52 +174,52 @@ std::string method::deleteTargetFiles(std::vector<std::string>files)
 {
 	for (std::vector<std::string>::iterator it = files.begin(); it != files.end(); ++it)
 	{
-		std::string filePath = "./www/tmp/" + *it;
+		std::string filePath = "./www/tmp/" + *it; // todo check if the path needs to be dynamic
+		std::ifstream file(filePath.c_str());
+		if (!file.is_open())
+			return (ERROR_404_RESPONSE);
+		file.close();
 		if (std::remove(filePath.c_str()) != 0)
-			return (ERROR_500_RESPONSE);
+			throw std::runtime_error(ERROR_500_RESPONSE);
 	}
-	return (
-		"HTTP/1.1 303 See Other\r\n"
-		"Content-Type: text/html\r\n"
-		"Content-Length: 0\r\n"
-		"Location: /delete.html\r\n"
-		"\r\n");
+	return (POST_303_RESPONSE("/delete.html"));
 }
-
 std::string method::DELETE(const std::string& request, int port)
 {
-	if (!PARSER_DELETE_RIGHT) return (ERROR_403_RESPONSE);
+	if (!PARSER_DELETE_RIGHT) throw std::runtime_error(ERROR_403_RESPONSE);
 	std::string filePath;
 
 	size_t start = request.find("DELETE") + 7;
 	if (start == std::string::npos)
-		return (ERROR_400_RESPONSE);
+		throw std::runtime_error(ERROR_400_RESPONSE);
 	size_t end = request.find(" ", start);
 	if (end == std::string::npos)
-		return (ERROR_400_RESPONSE);
+		throw std::runtime_error(ERROR_400_RESPONSE);
 	filePath = request.substr(start, end - start);
+	if (filePath == "/tmp/")
+		throw std::runtime_error(ERROR_403_RESPONSE); // Bad request for attempting to delete /tmp/ exactly
 	if (filePath.length() >= 5)
 	{
-		if (filePath.compare(0, 5, "/tmp/") != 0)
-			return (ERROR_403_RESPONSE);
+		if (filePath.compare(0, 5, "/tmp/") != 0)	// todo check if the path needs to be dynamic
+			throw std::runtime_error(ERROR_403_RESPONSE);
 	}
 	else
-		return (ERROR_403_RESPONSE);
+		throw std::runtime_error(ERROR_403_RESPONSE);
 	filePath = "./www" + filePath;
 	std::ifstream	file(filePath.c_str());
 	if (!file.is_open())
-		return (ERROR_404_RESPONSE);
+		throw std::runtime_error(ERROR_404_RESPONSE);
 	file.close();
 	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mDELETE request for file: " << filePath << "\e[0m" << std::endl;
 	if (std::remove(filePath.c_str()) == 0)
 		return (
 			"HTTP/1.1 200 OK\r\n"
 			"Content-Type: text/html\r\n"
-			"Content-Length: 58\r\n"
+			"Content-Length: 61\r\n"
 			"\r\n"
 			"<html><body><h1>200 OK</h1><p>File deleted.</p></body></html>");
 	else
-		return (ERROR_500_RESPONSE);
+		throw std::runtime_error(ERROR_500_RESPONSE);
 }
 
 std::vector<std::string> method::listFiles()
@@ -270,7 +260,7 @@ std::string method::generateDeletePage()
 		std::vector<std::string> allFiles = listFiles(); 
 		std::string htmlList = generateListHtml(allFiles);
 		size_t pos = content.find("<span>No file yet</span>");
-		if (pos == std::string::npos)
+		if (pos != std::string::npos)
 			content.replace(pos, 24, htmlList);
 		else
 			throw std::runtime_error(ERROR_500_RESPONSE);
@@ -336,10 +326,18 @@ std::string	method::handleCGI(const std::string& request, int port)
 	else if (request.find(CGI2) != std::string::npos)
 		cgiPath = "./www/cgi-bin/" + std::string(CGI2);
 	else
-		return (ERROR_404_RESPONSE);
+		throw std::runtime_error(ERROR_404_RESPONSE);
 	int pipeFd[2];
 	if (pipe(pipeFd) == -1)
-		return (ERROR_500_RESPONSE);
+		throw std::runtime_error(ERROR_500_RESPONSE);
 	return (""); // dev: to be implemented
 }
 
+std::string method::POST_303_RESPONSE(const std::string& location) {
+	return (
+		"HTTP/1.1 303 See Other\r\n"
+		"Content-Type: text/html\r\n"
+		"Content-Length: 0\r\n"
+		"Location: " + location + "\r\n"
+		"\r\n");
+}

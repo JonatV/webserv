@@ -19,6 +19,13 @@
 #define CGI2 "myscript.cgi"
 #define CERR_MSG(port, msg) std::cerr << "\e[31m[" + to_string(port) + "]\e[0m\t" + "\e[2m" + msg + "\e[0m" << std::endl
 
+const std::string DELETE_200_RESPONSE =
+	"HTTP/1.1 200 OK\r\n"
+	"Content-Type: text/html\r\n"
+	"Content-Length: 61\r\n"
+	"\r\n"
+	"<html><body><h1>200 OK</h1><p>File deleted.</p></body></html>";
+
 const std::string ERROR_400_RESPONSE =
 	"HTTP/1.1 400 Bad Request\r\n"
 	"Content-Type: text/html\r\n"
@@ -61,7 +68,6 @@ const std::string ERROR_500_RESPONSE =
 	"\r\n"
 	"<html><body><h1>500 Internal Server Error</h1><p>Server error.</p></body></html>";
 
-
 namespace method
 {
 	std::string GET(const std::string& request, int port);
@@ -81,7 +87,8 @@ namespace method
 	// CGI
 	std::string handleCGI(const std::string& request, int port);
 
-
+	// helper status code
+	std::string POST_303_RESPONSE(const std::string& location);
 }
 
 #endif
