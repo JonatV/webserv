@@ -47,7 +47,7 @@ std::string method::foundPage(const std::string& filepath, int port)
 			return (generateDeletePage());
 		std::string	content = gnl(file);
 		if (filepath.find(".css") != std::string::npos)
-		textType = "css";
+			textType = "css";
 		else
 			textType = "html";
 		return (
@@ -57,19 +57,35 @@ std::string method::foundPage(const std::string& filepath, int port)
 			"\r\n" + content);
 	}
 	else
-		return(ERROR_404_RESPONSE);
+		throw std::runtime_error(ERROR_404_RESPONSE);
 }
 
-std::string method::sendErrorPage(int clientSocketFd, int errorCode, const std::string& errorMessage)
+std::string method::getErrorHtml(int port, const std::string& errorMessage)
 {
-	std::string errorFilePath = "./www/error_pages/" + to_string(errorCode) + "error.html";
+	std::string errorCode;
+	size_t posStart = errorMessage.find(" ");
+	if (posStart == std::string::npos)
+		errorCode = "500";
+	else
+	{
+		errorCode = errorMessage.substr(posStart + 1, 3);
+		if (errorCode.length() != 3)
+			errorCode = "500";
+	}
+	std::string errorFilePath = "./www/error_pages/" + errorCode + "error.html";
+	CERR_MSG(port, "GET Sending error " + errorCode + ": " + errorFilePath);
 	std::ifstream file(errorFilePath.c_str());
-
 	if (file.is_open())
 	{
 		std::string content = gnl(file);
+		std::string errorType;
+		size_t posEnd = errorMessage.find("\r\n", posStart);
+		if (posEnd == std::string::npos)
+			return ("");
+		else
+			errorType = errorMessage.substr(posStart + 4, posEnd - posStart - 4);
 		return (
-			"HTTP/1.1 " + to_string(errorCode) + " " + errorMessage + "\r\n"
+			"HTTP/1.1 " + errorCode + " " + errorType + "\r\n"
 			"Content-Type: text/html\r\n"
 			"Content-Length: " + to_string(content.length()) + "\r\n"
 			"\r\n" + content);
@@ -254,10 +270,10 @@ std::string method::generateDeletePage()
 		std::vector<std::string> allFiles = listFiles(); 
 		std::string htmlList = generateListHtml(allFiles);
 		size_t pos = content.find("<span>No file yet</span>");
-		if (pos != std::string::npos)
+		if (pos == std::string::npos)
 			content.replace(pos, 24, htmlList);
 		else
-			return (ERROR_500_RESPONSE);
+			throw std::runtime_error(ERROR_500_RESPONSE);
 		return (
 			"HTTP/1.1 200 OK\r\n"
 			"Content-Type: text/html\r\n"
@@ -265,7 +281,7 @@ std::string method::generateDeletePage()
 			"\r\n" + content);
 	}
 	else
-		return (ERROR_404_RESPONSE);
+		throw std::runtime_error(ERROR_404_RESPONSE);
 }
 
 std::string method::generateListHtml(std::vector<std::string> allFiles)
@@ -301,14 +317,8 @@ std::string method::generateListHtml(std::vector<std::string> allFiles)
 		}
 		else
 		{
-			fullList +=
-				"<li>"
-				"	<label for=\"" + *it + "\">"
-				"		<span class=\"file_name\">" + *it + "</span>"
-				"		<p class=\"file_content file_content_error\">The file is empty</p>"
-				"	</label>"
-				"	<input type=\"checkbox\" name=\"" + *it + "\" id=\"" + *it + "\">"
-				"</li>";
+			std::cerr << "Error opening file: " << *it << std::endl; // wip refactor error msg
+			throw std::runtime_error(ERROR_500_RESPONSE);
 		}
 	}
 	fullList +=

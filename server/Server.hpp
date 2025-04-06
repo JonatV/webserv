@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/04 13:55:51 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/06 21:30:34 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,6 @@
 #define MAX_QUEUE 10
 #define BUFFER_SIZE 2048
 #define THROW_MSG(port, msg) throw std::runtime_error("\e[31m[" + to_string(port) + "]\e[0m\t" + "\e[2m" + msg + "\e[0m")
-#define CERR_MSG(port, msg) std::cerr << "\e[31m[" + to_string(port) + "]\e[0m\t" + "\e[2m" + msg + "\e[0m" << std::endl
 #define COUT_MSG(port, msg) std::cout << "\e[34m[" + to_string(port) + "]\e[0m\t" + "\e[2m" + msg + "\e[0m" << std::endl
 
 class Server
@@ -53,7 +52,7 @@ class Server
 		void				closeClient(struct epoll_event &event);
 		int					treatMethod(struct epoll_event &event);
 		std::string			selectMethod(char buffer[BUFFER_SIZE]);
-		void				sendErrorResponse(int clientSocketFd, const std::string &errorResponse);
+		void				sendErrorAndCloseClient(int clientSocketFd, const std::string &errorResponse);
 
 		// Prevent Copying
 		Server(const Server& other);

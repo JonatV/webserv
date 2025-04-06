@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/06 17:13:49 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/06 22:07:48 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,15 +68,13 @@ void Server::run()
 				if (events[i].events & EPOLLIN)
 				{
 					retValue = treatMethod(events[i]);
-					if (retValue == 0)
+					if (retValue == 0)				// client disconnected
 						closeClient(events[i]);
-					else if (retValue == -1)
+					else if (retValue == -1)		// error occured
 					{
-						CERR_MSG(_port, "Failed to treat method");
+						CERR_MSG(_port, "Error processing request");
 						closeClient(events[i]);
 					}
-					else if (retValue == -2)
-						CERR_MSG(_port, "405 Method Not Allowed");
 				}
 				else if((events[i].events & EPOLLOUT) || (events[i].events & EPOLLERR))
 					closeClient(events[i]);
@@ -86,8 +84,7 @@ void Server::run()
 }
 
 
-/// @return	-2 if the method is not allowed
-/// 		-1 if an error function failed
+/// @return	-1 if an error function failed
 /// 		0 if the request is a client disconnection
 /// 		1 if the request is treated
 int	Server::treatMethod(struct epoll_event &event)
@@ -104,19 +101,16 @@ int	Server::treatMethod(struct epoll_event &event)
 	try
 	{
 		std::string response = selectMethod(buffer);
-		if (response.empty())
-		{
-			if (send(clientSocketFd, ERROR_405_RESPONSE.c_str(), ERROR_405_RESPONSE.size(), 0) == -1)
-				return (CERR_MSG(_port, "Failed to send error response to client"), -1);
-			return (-2);
-		}
 		if (send(clientSocketFd, response.c_str(), response.size(), 0) == -1)
-			return (CERR_MSG(_port, "Failed to send response to client"), -1);
+			return (-1);
 	}
 	catch (const std::runtime_error &e)
 	{
-		std::cerr << "\e[31m[" << _port << "]\e[0m\t" << "\e[2m" << e.what() << "\e[0m" << std::endl;
-		method::sendErrorPage(clientSocketFd, e.what());
+		std::string errorResponse = method::getErrorHtml(_port, e.what());
+		if (errorResponse.empty())
+			errorResponse = ERROR_500_RESPONSE;
+		if (send(clientSocketFd, errorResponse.c_str(), errorResponse.size(), 0) == -1)
+			return (-1);
 	}
 	return (1);
 }
@@ -153,13 +147,13 @@ void Server::acceptClient()
 	if (retValue == -1)
 	{
 		CERR_MSG(_port, "Failed to retrieve socket flags");
-		sendErrorResponse(clientSocketFd, ERROR_500_RESPONSE);
+		sendErrorAndCloseClient(clientSocketFd, ERROR_500_RESPONSE);
 		return;
 	}
 	else if (retValue == -2)
 	{
 		CERR_MSG(_port, "Failed to set client socket to non-blocking");
-		sendErrorResponse(clientSocketFd, ERROR_500_RESPONSE);
+		sendErrorAndCloseClient(clientSocketFd, ERROR_500_RESPONSE);
 		return;
 	}
 	// add the client socket to epoll
@@ -169,7 +163,7 @@ void Server::acceptClient()
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientSocketFd, &newEventClient) == -1)
 	{
 		CERR_MSG(_port, "Failed to add client socket to epoll");
-		sendErrorResponse(clientSocketFd, ERROR_500_RESPONSE);
+		sendErrorAndCloseClient(clientSocketFd, ERROR_500_RESPONSE);
 		return;
 	}
 	// add the client to the map
@@ -177,7 +171,7 @@ void Server::acceptClient()
 	_clients.insert(std::make_pair(clientSocketFd, newClient));
 }
 
-void Server::sendErrorResponse(int clientSocketFd, const std::string &errorResponse)
+void Server::sendErrorAndCloseClient(int clientSocketFd, const std::string &errorResponse)
 {
 	if (send(clientSocketFd, errorResponse.c_str(), errorResponse.size(), 0) == -1)
 		CERR_MSG(_port, "Failed to send error response to client");
