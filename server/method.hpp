@@ -18,6 +18,7 @@
 #define CGI1 "test.cgi"
 #define CGI2 "myscript.cgi"
 
+
 const std::string ERROR_400_RESPONSE =
 	"HTTP/1.1 400 Bad Request\r\n"
 	"Content-Type: text/html\r\n"
@@ -68,7 +69,7 @@ namespace method
 	std::string DELETE(const std::string& request, int port);
 	
 	std::string foundPage(const std::string& filePath, int port);
-	std::string error404Page();
+	std::string sendErrorPage(int clientSocketFd, const std::string& errorMessage);
 
 	std::vector<std::string> listFiles();
 	std::string generateDeletePage();

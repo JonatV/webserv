@@ -2,15 +2,13 @@
 
 std::string method::GET(const std::string& request, int port)
 {
-	if (!PARSER_GET_RIGHT) return (ERROR_403_RESPONSE);
+	if (!PARSER_GET_RIGHT) throw std::runtime_error(ERROR_403_RESPONSE);
 	std::string	filePath;
 
 	size_t start = request.find("GET") + 4; // 4 is to go after "GET "
-	if (start == std::string::npos)
-		return (ERROR_400_RESPONSE);
+	if (start == std::string::npos) throw std::runtime_error(ERROR_400_RESPONSE);
 	size_t end = request.find(" ", start);
-	if (end == std::string::npos)
-		return (ERROR_400_RESPONSE);
+	if (end == std::string::npos) throw std::runtime_error(ERROR_400_RESPONSE);
 	std::string path = request.substr(start, end - start);
 	if (path == "/" || path == "/index" || path == "/index.html")		// index.html
 		filePath = "./www/index.html";
@@ -33,7 +31,7 @@ std::string method::GET(const std::string& request, int port)
 	if (!filePath.empty())
 		return (method::foundPage(filePath, port));
 	else
-		return (method::error404Page());
+		throw std::runtime_error(ERROR_404_RESPONSE);
 }
 
 std::string method::foundPage(const std::string& filepath, int port)
@@ -59,24 +57,25 @@ std::string method::foundPage(const std::string& filepath, int port)
 			"\r\n" + content);
 	}
 	else
-		return(method::error404Page());
+		return(ERROR_404_RESPONSE);
 }
 
-std::string method::error404Page()
+std::string method::sendErrorPage(int clientSocketFd, int errorCode, const std::string& errorMessage)
 {
-	std::ifstream	file("./www/error_pages/404error.html");
+	std::string errorFilePath = "./www/error_pages/" + to_string(errorCode) + "error.html";
+	std::ifstream file(errorFilePath.c_str());
 
 	if (file.is_open())
 	{
 		std::string content = gnl(file);
 		return (
-			"HTTP/1.1 404 Not Found\r\n"
+			"HTTP/1.1 " + to_string(errorCode) + " " + errorMessage + "\r\n"
 			"Content-Type: text/html\r\n"
 			"Content-Length: " + to_string(content.length()) + "\r\n"
 			"\r\n" + content);
 	}
 	else
-		return (ERROR_404_RESPONSE);
+		return (errorMessage);
 }
 
 std::string method::POST(const std::string& request, int port)
@@ -219,22 +218,29 @@ std::string method::DELETE(const std::string& request, int port)
 
 std::vector<std::string> method::listFiles()
 {
-	std::vector<std::string> files;
-	DIR *dir;
-	struct dirent *current_entry;
-
-	dir = opendir("./www/tmp/");
-	if (dir)
+	std::vector<std::string> files = std::vector<std::string>();
+	const char* path = "./www/tmp/";
+	DIR *dir = opendir(path);
+	if (dir == NULL)
 	{
-		while ((current_entry = readdir(dir)))
+		std::cerr << "Error opening directory: " << path << " for listing files." << std::endl; // wip refactor error msg
+		throw std::runtime_error(ERROR_500_RESPONSE);
+	}
+	struct dirent *current_entry;
+	while ((current_entry = readdir(dir)))
+	{
+		if (current_entry->d_type == DT_REG)
 		{
-			if (current_entry->d_type == DT_REG && strcmp(current_entry->d_name, ".") != 0)
-			{
-				files.push_back(current_entry->d_name);
-			}
+			std::string fileName = current_entry->d_name;
+			if (fileName != "." && fileName != "..")
+				files.push_back(fileName);
 		}
 	}
-	closedir(dir);
+	if (closedir(dir) == -1)
+	{
+		std::cerr << "Error closing directory: " << path << std::endl; // wip refactor error msg
+		throw std::runtime_error(ERROR_500_RESPONSE);
+	}
 	return (files);
 }
 
@@ -311,8 +317,6 @@ std::string method::generateListHtml(std::vector<std::string> allFiles)
 	return (fullList);
 }
 
-
-
 std::string	method::handleCGI(const std::string& request, int port)
 {
 	(void)port; // dev
@@ -328,3 +332,4 @@ std::string	method::handleCGI(const std::string& request, int port)
 		return (ERROR_500_RESPONSE);
 	return (""); // dev: to be implemented
 }
+

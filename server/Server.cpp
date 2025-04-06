@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/04 15:40:26 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/06 17:13:49 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,6 +92,7 @@ void Server::run()
 /// 		1 if the request is treated
 int	Server::treatMethod(struct epoll_event &event)
 {
+	std::string response = "";
 	int clientSocketFd = event.data.fd;
 	char buffer[BUFFER_SIZE] = {0};
 	ssize_t bytesReceived = recv(clientSocketFd, buffer, sizeof(buffer) - 1, 0);
@@ -100,16 +101,23 @@ int	Server::treatMethod(struct epoll_event &event)
 	if (bytesReceived < 0)
 		return (-1);
 	buffer[bytesReceived] = '\0';
-
-	std::string response = selectMethod(buffer);
-	if (response.empty())
+	try
 	{
-		if (send(clientSocketFd, ERROR_405_RESPONSE.c_str(), ERROR_405_RESPONSE.size(), 0) == -1)
-			return (CERR_MSG(_port, "Failed to send error response to client"), -1);
-		return (-2);
+		std::string response = selectMethod(buffer);
+		if (response.empty())
+		{
+			if (send(clientSocketFd, ERROR_405_RESPONSE.c_str(), ERROR_405_RESPONSE.size(), 0) == -1)
+				return (CERR_MSG(_port, "Failed to send error response to client"), -1);
+			return (-2);
+		}
+		if (send(clientSocketFd, response.c_str(), response.size(), 0) == -1)
+			return (CERR_MSG(_port, "Failed to send response to client"), -1);
 	}
-	if (send(clientSocketFd, response.c_str(), response.size(), 0) == -1)
-		return (CERR_MSG(_port, "Failed to send response to client"), -1);
+	catch (const std::runtime_error &e)
+	{
+		std::cerr << "\e[31m[" << _port << "]\e[0m\t" << "\e[2m" << e.what() << "\e[0m" << std::endl;
+		method::sendErrorPage(clientSocketFd, e.what());
+	}
 	return (1);
 }
 
@@ -126,7 +134,7 @@ std::string	Server::selectMethod(char  buffer[BUFFER_SIZE])
 	else if (request.find("DELETE") != std::string::npos)
 		return (method::DELETE(request, _port));
 	else
-		return ("");
+		throw std::runtime_error(ERROR_405_RESPONSE);
 }
 
 void Server::acceptClient()
