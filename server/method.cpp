@@ -98,24 +98,61 @@ std::string method::POST(const std::string& request, int port)
 {
 	if (!PARSER_POST_RIGHT) throw std::runtime_error(ERROR_403_RESPONSE);
 	
+	size_t start = request.find(" ");
+	size_t end = request.find(" ", start + 1);
+	if (start == std::string::npos || end == std::string::npos) throw std::runtime_error(ERROR_500_RESPONSE);
+	std::string pathName = request.substr(start + 1, end - start - 1);
 	if (request.find("POST /delete") != std::string::npos)
 	{
 		std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST request for delete\e[0m" << std::endl;
 		return (handleDeleteRequest(request));
 	}
 	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST request\e[0m" << std::endl;
-	std::string	content;
+	std::string content = {0};
+	content = postFromDashboard(request); // POST from dashboard
+	if (content.empty()) // POST from a terminal (curl)
+	{
+		if (pathName == "/tmp/")
+		{
+			std::string body = request.substr(request.find("\r\n\r\n") + 4);
+			if (body.empty())
+				throw std::runtime_error(ERROR_400_RESPONSE);
+			ssize_t bytesReceived = body.length();
+			if (bytesReceived > PARSER_MAX_PAYLOAD)
+				throw std::runtime_error(ERROR_413_RESPONSE);
+			std::string fileName = "./www/tmp/" + to_string(time(0)) + ".txt";
+			while (std::ifstream(fileName.c_str()))
+				fileName = "./www/tmp/" + to_string(time(0)) + ".txt";
+			std::ofstream file(fileName.c_str());
+			if (file.is_open())
+			{
+				file << body;
+				file.close();
+				content = POST_201_RESPONSE;
+			}
+			else
+				throw std::runtime_error(ERROR_500_RESPONSE);
+		}
+		else
+			throw std::runtime_error(ERROR_403_RESPONSE);
+	}
+	return (content);
+}
+
+std::string method::postFromDashboard(const std::string &request)
+{
+	std::string content = "";
 	size_t start = request.find("MSG_TEXTAREA=");
 	if (start == std::string::npos || request.find("application/x-www-form-urlencoded") == std::string::npos)
-		throw std::runtime_error(ERROR_400_RESPONSE);
+		return ("");
 	content = request.substr(start + std::string("MSG_TEXTAREA=").length());
 	ssize_t bytesReceived = content.length();
 	if (bytesReceived > PARSER_MAX_PAYLOAD)
 		throw std::runtime_error(ERROR_413_RESPONSE);
-	std::string	fileName = "./www/tmp/" + to_string(time(0)) + ".txt"; // todo check if the path needs to be dynamic
+	std::string fileName = "./www/tmp/" + to_string(time(0)) + ".txt"; // todo check if the path needs to be dynamic
 	while (std::ifstream(fileName.c_str()))
 		fileName = "./www/tmp/" + to_string(time(0)) + ".txt";
-	std::ofstream	file(fileName.c_str());
+	std::ofstream file(fileName.c_str());
 	if (file.is_open())
 	{
 		file << content;
@@ -123,7 +160,7 @@ std::string method::POST(const std::string& request, int port)
 		return (POST_303_RESPONSE("/dashboard.html"));
 	}
 	else
-		throw std::runtime_error(ERROR_404_RESPONSE);
+		throw std::runtime_error(ERROR_500_RESPONSE);
 }
 
 /*

@@ -68,21 +68,29 @@ const std::string ERROR_500_RESPONSE =
 	"\r\n"
 	"<html><body><h1>500 Internal Server Error</h1><p>Server error.</p></body></html>";
 
+const std::string POST_201_RESPONSE =
+	"HTTP/1.1 201 Created\r\n"
+	"Content-Type: text/html\r\n"
+	"Content-Length: 66\r\n"
+	"\r\n"
+	"<html><body><h1>201 Created</h1><p>File created.</p></body></html>";
+
 namespace method
 {
 	std::string GET(const std::string& request, int port);
-	std::string POST(const std::string& request, int port);
+	std::string POST(const std::string &request, int port);
 	std::string DELETE(const std::string& request, int port);
 	
 	std::string foundPage(const std::string& filePath, int port);
 	std::string getErrorHtml(int port, const std::string& errorMessage);
-
+	
 	std::vector<std::string> listFiles();
 	std::string generateDeletePage();
 	std::string generateListHtml(std::vector<std::string> allFiles);
 	std::string handleDeleteRequest(const std::string& request);
 	std::string deleteTargetFiles(std::vector<std::string>);
 	std::string trimFileName(std::string);
+	std::string postFromDashboard(const std::string &request);
 
 	// CGI
 	std::string handleCGI(const std::string& request, int port);
