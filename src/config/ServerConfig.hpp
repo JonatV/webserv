@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/04 12:31:41 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/07 14:38:28 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@ class ServerConfig {
 		// Attributes of server
 		std::vector<int>						_port;
 		std::string								_host;
+		std::string								_root;
 		std::string								_serverName;
 		size_t									_clientBodyLimit;
 		std::map<int, std::string> 				_errorPages;
@@ -32,6 +33,7 @@ class ServerConfig {
 		std::map<std::string, LocationConfig>	*getLocationConfig(std::vector<std::string> tokens, size_t& i);
 		int										*getPort(std::vector<std::string> tokens, size_t i);
 		std::string								*getHost(std::vector<std::string> tokens, size_t i);
+		std::string								*getRoot(std::vector<std::string> tokens, size_t i);
 		size_t									*getClientBodyLimit(std::vector<std::string> tokens, size_t i);
 		std::string								*getServerName(std::vector<std::string> tokens, size_t i);
 
@@ -52,6 +54,7 @@ class ServerConfig {
 			ERROR_INVALID_HOST,
 			ERROR_DUPLICATE_SERVER,
 			ERROR_INVALID_SERVER_NAME,
+			ERROR_INVALID_ROOT_PATH,
 
 			// Routing & Redirection Errors
 			ERROR_INVALID_REDIRECT = 110,
@@ -83,9 +86,11 @@ class ServerConfig {
 						case ERROR_INVALID_HOST:
 							return "Invalid host configuration";
 						case ERROR_DUPLICATE_SERVER:
-							return "Duplicate server name or server:port combination";
+							return "Duplicate server name or server: port combination";
 						case ERROR_INVALID_SERVER_NAME:
 							return "Invalid server name";
+						case ERROR_INVALID_ROOT_PATH:
+							return "Invalid root path in server block";
 						case ERROR_INVALID_REDIRECT:
 							return "Invalid redirection in server block";
 						case ERROR_LOOPING_REDIRECT:

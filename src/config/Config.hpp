@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:08 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/04 12:39:03 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/07 10:55:07 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,10 +25,13 @@ class Config {
 	private:
 		std::vector<ServerConfig>	_servers;
 		std::vector<std::string>	_tokens;
+		std::set<std::string>		_nonServerSections; // Store non-server section names
 
 		// Functions to parse the config file
 		std::vector<ServerConfig>	*parseServers(std::vector<std::string> tokens);
 		std::vector<std::string>	*getTokensFromFile(std::ifstream& file);
+		size_t						skipBlock(const std::vector<std::string>& tokens, size_t startPos);
+		bool						isNonServerSection(const std::string& token);
 		
 		public:
 		Config();

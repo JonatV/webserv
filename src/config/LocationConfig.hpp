@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:12 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/04 12:48:02 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/07 14:39:05 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@ class LocationConfig {
 		// Attributes of location
 		std::string					_index;
 		std::vector<std::string>	_allowedMethods;
-		std::string					_root;
+		std::string					_locationRoot;
 		bool						_autoindex;
 
 		// Functions to parse location
@@ -63,7 +63,7 @@ class LocationConfig {
 			ERROR_INVALID_AUTOINDEX = 230,
 
 			// Configuration Key Errors
-    		ERROR_UNKNOWN_KEY = 240
+			ERROR_UNKNOWN_KEY = 240
 		};
 		
 		// Custom exception class

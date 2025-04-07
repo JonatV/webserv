@@ -6,16 +6,18 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/04 12:32:32 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/07 14:45:18 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "LocationConfig.hpp"
 
 LocationConfig::LocationConfig() : _autoindex(false) {
+    // Initialize with default values
 }
 
 LocationConfig::~LocationConfig() {
+    // Clean up if needed
 }
 
 // Parse index file from configuration tokens
@@ -33,11 +35,9 @@ std::string *LocationConfig::getIndex(std::vector<std::string> tokens) {
 			}
 		}
 	}
-
 	if (index.empty()) {
 		throw ConfigException(ERROR_INVALID_INDEX_FILES);
 	}
-
 	std::string *result = new std::string(index);
 	return result;
 }
@@ -60,16 +60,13 @@ std::string *LocationConfig::getAllowedMethods(std::vector<std::string> tokens) 
 			break;
 		}
 	}
-
 	if (methods.empty()) {
 		throw ConfigException(ERROR_INVALID_ALLOWED_METHODS);
 	}
-
 	// Remove trailing space
 	if (!methods.empty()) {
-		methods.pop_back();
+		methods.erase(methods.length() - 1, 1);
 	}
-
 	std::string *result = new std::string(methods);
 	return result;
 }
@@ -89,11 +86,17 @@ std::string *LocationConfig::getRoot(std::vector<std::string> tokens) {
 			}
 		}
 	}
-
 	if (root.empty()) {
 		throw ConfigException(ERROR_INVALID_ROOT_PATH);
 	}
-
+	// Normalize path - remove trailing slashes if any
+	while (root.length() > 1 && root[root.length() - 1] == '/') {
+		root.erase(root.length() - 1, 1);
+	}
+	// Add leading ./ if path doesn't have absolute or relative path indicators
+	if (root[0] != '/' && root[0] != '.' && root[0] != '~') {
+		root = "./" + root;
+	}
 	std::string *result = new std::string(root);
 	return result;
 }
@@ -118,7 +121,6 @@ bool *LocationConfig::getAutoIndex(std::vector<std::string> tokens) {
 			break;
 		}
 	}
-
 	bool *result = new bool(autoindex);
 	return result;
 }
