@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/06 22:07:48 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/07 05:42:06 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,14 +118,18 @@ int	Server::treatMethod(struct epoll_event &event)
 /// @brief find the method in the request and call the corresponding method
 /// @param buffer header of the request
 /// @return return the response of the method OR an empty string if the method is not allowed
-std::string	Server::selectMethod(char  buffer[BUFFER_SIZE])
+std::string	Server::selectMethod(char buffer[BUFFER_SIZE])
 {
 	std::string	request(buffer);
-	if (request.find("GET") != std::string::npos)
+	size_t end = request.find(" ");
+	if (end == std::string::npos)
+		throw std::runtime_error(ERROR_400_RESPONSE);
+	std::string methodName = request.substr(0, end);
+	if (methodName == "GET")
 		return (method::GET(request, _port));
-	else if (request.find("POST") != std::string::npos)
+	else if (methodName == "POST")
 		return (method::POST(request, _port));
-	else if (request.find("DELETE") != std::string::npos)
+	else if (methodName == "DELETE")
 		return (method::DELETE(request, _port));
 	else
 		throw std::runtime_error(ERROR_405_RESPONSE);
