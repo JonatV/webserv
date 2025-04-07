@@ -10,7 +10,9 @@ std::string method::GET(const std::string& request, int port)
 	size_t end = request.find(" ", start);
 	if (end == std::string::npos) throw std::runtime_error(ERROR_400_RESPONSE);
 	std::string path = request.substr(start, end - start);
-	if (path == "/" || path == "/index" || path == "/index.html")		// index.html
+	if (path == "/stress" || path == "/stress.html")					// stress.html
+		filePath = "./www/stress.html";
+	else if (path == "/" || path == "/index" || path == "/index.html")	// index.html
 		filePath = "./www/index.html";
 	else if (path == "/dashboard" || path == "/dashboard.html")			// dashboard.html
 		filePath = "./www/dashboard.html";
@@ -37,12 +39,10 @@ std::string method::GET(const std::string& request, int port)
 std::string method::foundPage(const std::string& filepath, int port)
 {
 	std::ifstream	file(filepath.c_str());
-
-	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mGET request for file: " << filepath << "\e[0m" << std::endl;
+	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mGET request for file: " << filepath << "\e[0m" << std::endl; //dev uncomment
 	if (file.is_open())
 	{
 		std::string	textType;
-		
 		if (filepath == "./www/delete.html")
 			return (generateDeletePage());
 		std::string	content = gnl(file);
