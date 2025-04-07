@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:10 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/07 14:51:43 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/07 14:53:59 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,6 @@ Config::~Config() {
 std::vector<std::string>	*Config::getTokensFromFile(std::ifstream& file) {
 	std::vector<std::string> *tokens = new std::vector<std::string>();
 	std::string line, word;
-	bool inComment = false;
 	int lineNum = 0;
 
 	while (std::getline(file, line)) {
