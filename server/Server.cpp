@@ -6,13 +6,14 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/07 05:42:06 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/07 17:59:15 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
+#include "WebServer.hpp"
 
-Server::Server(int port) : _port(port), _serverSocketFd(-1)
+Server::Server(int port, WebServer* webserver) : _port(port), _serverSocketFd(-1), _webServer(webserver)
 {
 	std::cout << "\e[34m[" << _port << "]\e[0m\t" << "\e[2mCreating Server\e[0m" << std::endl;
 }
@@ -38,49 +39,15 @@ void Server::run()
 	// init and bind the socket
 	initSocketId(_serverSocketId);
 	bindSocketFdWithID();
-	// set more option for the socket (instant reuse of the addr if closed) // todo check if has to be done
 	// listen on the socket
 	if (listen(_serverSocketFd, MAX_QUEUE) == -1)
 	{
 		close(_serverSocketFd);
 		THROW_MSG(_port, "Failed to listen on socket");
 	}
-	std::cout << "\e[34m[" << _port << "]\e[0m\t" << "\e[2mServer listening \e[0m" << std::endl;
-	// create epoll fd and add server socket to epoll
-	createEpollFd();
+	//add server socket to epoll
 	addServerSocketToEpoll();
-	// accept incoming connections continuously. This is the main loop of the server which will run until the server is stopped
-	struct epoll_event	events[MAX_QUEUE];
-	while (true)
-	{
-		int numEvents = epoll_wait(_epollFd, events, MAX_QUEUE, -1); // give the number of events waiting to be processed
-		if (numEvents == -1)
-		{
-			close(_serverSocketFd);
-			close(_epollFd);
-			THROW_MSG(_port, "Epoll wait failed");
-		}
-		for (int i = 0; i < numEvents; i++)
-		{
-			if (events[i].data.fd == _serverSocketFd)
-				acceptClient();
-			else {
-				if (events[i].events & EPOLLIN)
-				{
-					retValue = treatMethod(events[i]);
-					if (retValue == 0)				// client disconnected
-						closeClient(events[i]);
-					else if (retValue == -1)		// error occured
-					{
-						CERR_MSG(_port, "Error processing request");
-						closeClient(events[i]);
-					}
-				}
-				else if((events[i].events & EPOLLOUT) || (events[i].events & EPOLLERR))
-					closeClient(events[i]);
-			}
-		}
-	}
+	std::cout << "\e[34m[" << _port << "]\e[0m\t" << "\e[2mServer listening \e[0m" << std::endl;
 }
 
 
@@ -173,6 +140,8 @@ void Server::acceptClient()
 	// add the client to the map
 	Client *newClient = new Client(clientSocketFd, clientSocketId, _port);
 	_clients.insert(std::make_pair(clientSocketFd, newClient));
+	// add the client to the epoll
+	_webServer->registerClientFd(clientSocketFd, this);
 }
 
 void Server::sendErrorAndCloseClient(int clientSocketFd, const std::string &errorResponse)
@@ -180,6 +149,7 @@ void Server::sendErrorAndCloseClient(int clientSocketFd, const std::string &erro
 	if (send(clientSocketFd, errorResponse.c_str(), errorResponse.size(), 0) == -1)
 		CERR_MSG(_port, "Failed to send error response to client");
 	close(clientSocketFd);
+	_webServer->unregisterClientFd(clientSocketFd);
 }
 
 void Server::closeClient(struct epoll_event &event)
@@ -188,21 +158,13 @@ void Server::closeClient(struct epoll_event &event)
 	if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientSocketFd, NULL) == -1)
 	{
 		close(clientSocketFd);
+		_webServer->unregisterClientFd(clientSocketFd);
 		THROW_MSG(_port, "Failed to remove client socket from epoll");
 	}
 	COUT_MSG(_port, "Client disconnected");
 	_clients.erase(clientSocketFd);
 	close(clientSocketFd);
-}
-
-void Server::createEpollFd()
-{
-	_epollFd = epoll_create1(0);
-	if (_epollFd == -1)
-	{
-		close(_serverSocketFd);
-		THROW_MSG(_port, "Epoll create failed");
-	}
+	_webServer->unregisterClientFd(clientSocketFd);
 }
 
 void Server::addServerSocketToEpoll()
@@ -261,4 +223,14 @@ Server::~Server()
 int Server::getPort() const
 {
 	return (_port);
+}
+
+int Server::getServerSocketFd() const
+{
+	return (_serverSocketFd);
+}
+
+void Server::setEpollFd(int epollFd)
+{
+	_epollFd = epollFd;
 }
