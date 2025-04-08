@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Dashboard</title>
+	<link rel="stylesheet" type="text/css" href="style/style.css">
+</head>
+<body>
+	<header>
+		<div class="flex_column header_dashboard">
+			<h1>Dashboard</h1>
+			<button id="toHome" onclick="window.location.href='/'">Go to the homepage</button>
+		</div>
+	</header>
+	<main>
+		<div class="flex_column div_main">
+			<div class="flex_column">
+				<h2>Methods</h2>
+				<div class="flex_column div_methods">
+					<button class="bigBtn" id="get" onclick="window.location.href='/get'">GET</button>
+					<div class="form_post">
+						<form class="flex_column" action="" method="post">
+							<textarea class="form_textarea" name="MSG_TEXTAREA" id="msg" placeholder="Enter your message here"></textarea>
+							<button type="submit" class="bigBtn">POST</button>
+						</form>
+					</div>
+					<button class="bigBtn" id="delete" onclick="window.location.href='/delete'">DELETE</button>
+				</div>
+			</div>
+			<div class="flex_column">
+				<h2>Applications</h2>
+				<div class="flex_row">
+					<button class="bigBtn" id="cgi1" onclick="window.location.href='/cgi1'">CGI 1</button>
+					<button class="bigBtn" id="cgi2" onclick="window.location.href='/cgi2'">CGI 2</button>
+				</div>
+			</div>
+		</div>
+</body>
+</html>
