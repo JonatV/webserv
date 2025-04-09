@@ -6,13 +6,15 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:17 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/07 14:47:25 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/09 18:03:18 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ServerConfig.hpp"
 #include <sstream>
 #include <cstdlib> // for atoi and strtoul
+#include <sys/stat.h>
+#include <unistd.h>
 
 // ServerConfig Constructor & Destructor
 ServerConfig::ServerConfig() : _clientBodyLimit(0) {
@@ -43,7 +45,7 @@ int *ServerConfig::getPort(std::vector<std::string> tokens, size_t i) {
 			throw ConfigException(ERROR_INVALID_PORT);
 		}
 		// Basic port validation
-		if (port < 0 || port > 65535) {
+		if (port < 1024 || port > 65535) {
 			throw ConfigException(ERROR_INVALID_PORT);
 		}
 	} catch (std::exception& e) {
@@ -101,7 +103,22 @@ std::string *ServerConfig::getRoot(std::vector<std::string> tokens, size_t i) {
 	}
 	// Add leading ./ if path doesn't have absolute or relative path indicators
 	if (root[0] != '/' && root[0] != '.' && root[0] != '~') {
-		root = "./" + root;
+		root = "./../www/" + root;
+	}
+	// Path validation
+	struct stat path_stat;
+	if (stat(root.c_str(), &path_stat) != 0) {
+		// Path doesn't exist
+		throw ConfigException(ERROR_INVALID_ROOT_PATH);
+	}
+	if (!S_ISDIR(path_stat.st_mode)) {
+		// Path exists but is not a directory
+		throw ConfigException(ERROR_INVALID_ROOT_PATH);
+	}
+	// Check access permissions
+	if (access(root.c_str(), R_OK) != 0) {
+		// No read permission
+		throw ConfigException(ERROR_INVALID_ROOT_PATH);
 	}
 	// Check for semicolon
 	if (i + 1 < tokens.size() && tokens[i + 1] != ";") {
@@ -252,7 +269,6 @@ std::map<std::string, LocationConfig> *ServerConfig::getLocationConfig(std::vect
 			}
 			locationConfig._locationRoot = root;
 			i++; // Move to next token
-			
 			// Skip semicolon if present
 			if (i < tokens.size() && tokens[i] == ";") {
 				i++;

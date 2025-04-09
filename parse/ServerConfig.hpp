@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/07 14:38:28 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/09 13:42:45 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,6 +55,7 @@ class ServerConfig {
 			ERROR_DUPLICATE_SERVER,
 			ERROR_INVALID_SERVER_NAME,
 			ERROR_INVALID_ROOT_PATH,
+			ERROR_INVALID_ERROR_PAGE_PATH,
 
 			// Routing & Redirection Errors
 			ERROR_INVALID_REDIRECT = 110,

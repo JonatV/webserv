@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:08 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/07 10:55:07 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/09 13:44:03 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,8 @@
 # include <fstream>
 # include <sstream>
 # include "ServerConfig.hpp"
+# include <sys/stat.h>
+# include <unistd.h>
 
 class Config {
 	private:
