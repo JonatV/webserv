@@ -4,7 +4,6 @@ std::string method::GET(const std::string& request, int port)
 {
 	if (!PARSER_GET_RIGHT) throw std::runtime_error(ERROR_403_RESPONSE);
 	std::string	filePath;
-	std::cout << request << std::endl;
 	size_t start = request.find("GET") + 4; // 4 is to go after "GET "
 	if (start == std::string::npos) throw std::runtime_error(ERROR_400_RESPONSE);
 	size_t end = request.find(" ", start);
