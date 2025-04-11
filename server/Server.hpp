@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/07 17:59:17 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/11 11:25:44 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,36 +39,39 @@ class WebServer;
 class Server
 {
 	private:
-		int						_port; // Parser
-		int						_serverSocketFd;
-		struct sockaddr_in		_serverSocketId;
-		std::map<int, Client *>	_clients;
-		int						_epollFd;
-		WebServer*				_webServer;
-
+		std::vector<int>					_ports; // Parser
+		std::vector<int>					_serverSocketFds;
+		std::vector<struct sockaddr_in>		_serverSocketIds;
+		std::map<int, int>					_socketFdToPort;
+		std::map<int, Client *>				_clients;
+		int									_epollFd;
+		WebServer*							_webServer;
+		std::vector<int>					_runningPorts;
+		
 		// methods
 		int					setNonBlocking(int fd);
-		void				addServerSocketToEpoll();
-		void				initSocketId(struct sockaddr_in &socketId);
-		void				bindSocketFdWithID();
+		void				initSocketId(struct sockaddr_in &socketId, int port);
 
-		std::string			selectMethod(char buffer[BUFFER_SIZE]);
-		void				sendErrorAndCloseClient(int clientSocketFd, const std::string &errorResponse);
+		std::string			selectMethod(char buffer[BUFFER_SIZE], int port);
+		void				sendErrorAndCloseClient(int clientSocketFd, const std::string &errorResponse, int port);
 		
 		// Prevent Copying
 		Server(const Server& other);
 		Server& operator=(const Server& other);
 		
 	public:
-		Server(int port, WebServer* webServer);
+		Server(std::vector<int> ports, WebServer* webserver);
 		~Server();
 		void				run();
-		void				acceptClient();
-		void				closeClient(struct epoll_event &event);
-		int					treatMethod(struct epoll_event &event);
+		void				acceptClient(int fd);
+		void				closeClient(struct epoll_event &event, int port);
+		int					treatMethod(struct epoll_event &event, int clientPort);
+		bool				isServerSocket(int fd);
 
 		int					getPort() const;
-		int					getServerSocketFd() const;
+		std::vector<int>	getServerSocketFds() const;
+		int					getClientPort(int clientSocketFd);
+		std::vector<int>	getRunningPorts() const;
 
 		void				setEpollFd(int epollFd);
 };
