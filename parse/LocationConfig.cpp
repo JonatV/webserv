@@ -6,13 +6,14 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/07 14:45:18 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/11 18:19:32 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "LocationConfig.hpp"
 
 LocationConfig::LocationConfig() : _autoindex(false) {
+	_locationRoot = "./www/";
     // Initialize with default values
 }
 
@@ -21,24 +22,47 @@ LocationConfig::~LocationConfig() {
 }
 
 // Parse index file from configuration tokens
-std::string *LocationConfig::getIndex(std::vector<std::string> tokens) {
-	std::string index;
-
-	// Find index directive and get value
-	for (size_t i = 0; i < tokens.size(); i++) {
-		if (tokens[i] == "index" && i + 1 < tokens.size()) {
-			index = tokens[i + 1];
-			
-			// Skip the semicolon if it exists
-			if (i + 2 < tokens.size() && tokens[i + 2] == ";") {
-				break;
-			}
-		}
-	}
-	if (index.empty()) {
+std::string *LocationConfig::getIndex(std::vector<std::string> tokens, size_t i, const std::string& rootPath) {
+	// Check if we have enough tokens
+	if (i + 1 >= tokens.size()) {
 		throw ConfigException(ERROR_INVALID_INDEX_FILES);
 	}
-	std::string *result = new std::string(index);
+	// Skip the "index" token
+	i++;
+	std::string indexName = tokens[i];
+	// Basic validation
+	if (indexName.empty()) {
+		throw ConfigException(ERROR_INVALID_INDEX_FILES);
+	}
+	// Check for HTML extension
+	if (indexName.length() < 5 || indexName.substr(indexName.length() - 5) != ".html") {
+		throw ConfigException(ERROR_INVALID_INDEX_FORMAT);
+	}
+	// Check for semicolon
+	if (i + 1 >= tokens.size() || tokens[i + 1] != ";") {
+		throw ConfigException(ERROR_INVALID_INDEX_FILES); // Missing semicolon
+	}
+	// Construct full path
+	std::string fullPath = rootPath;
+	// Make sure rootPath ends with a slash
+	if (!rootPath.empty() && rootPath[rootPath.length() - 1] != '/') {
+		fullPath += "/";
+	}
+	fullPath += indexName;
+	// Check if file exists and is readable
+	struct stat file_stat;
+	if (stat(fullPath.c_str(), &file_stat) != 0) {
+		throw ConfigException(ERROR_INDEX_FILE_NOT_FOUND);
+	}
+	// Check if it's a regular file
+	if (!S_ISREG(file_stat.st_mode)) {
+		throw ConfigException(ERROR_INDEX_NOT_A_FILE);
+	}
+	// Check for read permissions
+	if (access(fullPath.c_str(), R_OK) != 0) {
+		throw ConfigException(ERROR_INDEX_FILE_NO_ACCESS);
+	}
+	std::string *result = new std::string(indexName);
 	return result;
 }
 
@@ -72,32 +96,36 @@ std::string *LocationConfig::getAllowedMethods(std::vector<std::string> tokens) 
 }
 
 // Parse root directory from configuration tokens
-std::string *LocationConfig::getRoot(std::vector<std::string> tokens) {
-	std::string root;
-
-	// Find root directive and get value
-	for (size_t i = 0; i < tokens.size(); i++) {
-		if (tokens[i] == "root" && i + 1 < tokens.size()) {
-			root = tokens[i + 1];
-			
-			// Skip the semicolon if it exists
-			if (i + 2 < tokens.size() && tokens[i + 2] == ";") {
-				break;
-			}
-		}
-	}
-	if (root.empty()) {
+std::string *LocationConfig::getRoot(std::vector<std::string> tokens, size_t i) {
+	// Check if we have enough tokens
+	if (i + 1 >= tokens.size()) {
 		throw ConfigException(ERROR_INVALID_ROOT_PATH);
 	}
-	// Normalize path - remove trailing slashes if any
-	while (root.length() > 1 && root[root.length() - 1] == '/') {
-		root.erase(root.length() - 1, 1);
+	// Skip the "root" token
+	i++;
+	std::string path = tokens[i];
+	// Basic validation
+	if (path.empty()) {
+		throw ConfigException(ERROR_INVALID_ROOT_PATH);
 	}
-	// Add leading ./ if path doesn't have absolute or relative path indicators
-	if (root[0] != '/' && root[0] != '.' && root[0] != '~') {
-		root = "./" + root;
+	// Check for semicolon
+	if (i + 1 >= tokens.size() || tokens[i + 1] != ";") {
+		throw ConfigException(ERROR_INVALID_ROOT_PATH); // Missing semicolon
 	}
-	std::string *result = new std::string(root);
+	// Check if path is a directory and accessible
+	struct stat path_stat;
+	if (stat(path.c_str(), &path_stat) != 0) {
+		throw ConfigException(ERROR_ROOT_PATH_NOT_FOUND);
+	}
+	// Check if it's a directory
+	if (!S_ISDIR(path_stat.st_mode)) {
+		throw ConfigException(ERROR_ROOT_PATH_NOT_DIRECTORY);
+	}
+	// Check for read permissions
+	if (access(path.c_str(), R_OK) != 0) {
+		throw ConfigException(ERROR_ROOT_PATH_NO_ACCESS);
+	}
+	std::string *result = new std::string(path);
 	return result;
 }
 

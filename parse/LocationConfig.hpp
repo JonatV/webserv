@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:12 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/07 14:39:05 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/11 18:09:40 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,8 @@
 # include <iostream>
 # include <vector>
 # include <map>
+# include <sys/stat.h>
+# include <unistd.h>
 
 class LocationConfig {
 	private:
@@ -26,9 +28,9 @@ class LocationConfig {
 		bool						_autoindex;
 
 		// Functions to parse location
-		std::string	*getIndex(std::vector<std::string> tokens);
+		std::string *LocationConfig::getIndex(std::vector<std::string> tokens, size_t i, const std::string& rootPath);
 		std::string	*getAllowedMethods(std::vector<std::string> tokens);
-		std::string	*getRoot(std::vector<std::string>  tokens);
+		std::string *getRoot(std::vector<std::string> tokens, size_t i);
 		bool		*getAutoIndex(std::vector<std::string> tokens);
 
 	public:
@@ -48,22 +50,29 @@ class LocationConfig {
 			ERROR_INVALID_ROOT_PATH,
 			ERROR_INVALID_UPLOAD_PATH,
 			ERROR_DUPLICATE_LOCATION,
+			ERROR_ROOT_PATH_NO_ACCESS,
+			ERROR_ROOT_PATH_NOT_DIRECTORY,
+			ERROR_ROOT_PATH_NOT_FOUND,
+			ERROR_INVALID_INDEX_FORMAT,
+			ERROR_INDEX_FILE_NOT_FOUND,
+			ERROR_INDEX_NOT_A_FILE,
+			ERROR_INDEX_FILE_NO_ACCESS,
 
 			// Routing & Redirection Errors
-			ERROR_INVALID_REDIRECT = 210,
+			ERROR_INVALID_REDIRECT = 220,
 			ERROR_LOOPING_REDIRECT,
 
 			// Request Handling Errors
-			ERROR_INVALID_ALLOWED_METHODS = 220,
+			ERROR_INVALID_ALLOWED_METHODS = 230,
 			ERROR_INVALID_INDEX_FILES,
 			ERROR_INVALID_ERROR_PAGE,
 			ERROR_INVALID_CGI_PATH,
 
 			// Security & Limits
-			ERROR_INVALID_AUTOINDEX = 230,
+			ERROR_INVALID_AUTOINDEX = 240,
 
 			// Configuration Key Errors
-			ERROR_UNKNOWN_KEY = 240
+			ERROR_UNKNOWN_KEY = 250
 		};
 		
 		// Custom exception class
@@ -84,6 +93,20 @@ class LocationConfig {
 							return "Invalid location prefix";
 						case ERROR_INVALID_ROOT_PATH:
 							return "Invalid root path";
+						case ERROR_ROOT_PATH_NO_ACCESS:
+							return "Root in location block has no read access";
+						case ERROR_ROOT_PATH_NOT_DIRECTORY:
+							return "Root in location block is not a directory";
+						case ERROR_ROOT_PATH_NOT_FOUND:
+							return "Root path not found in location block";
+						case ERROR_INVALID_INDEX_FORMAT:
+							return "Invalid index file format in location block";
+						case ERROR_INDEX_FILE_NOT_FOUND:
+							return "Index file not found in location block";
+    					case ERROR_INDEX_NOT_A_FILE:
+							return "Index is not a file in location block";
+    					case ERROR_INDEX_FILE_NO_ACCESS:
+							return "Index file has no read access in location block";
 						case ERROR_INVALID_UPLOAD_PATH:
 							return "Invalid upload path";
 						case ERROR_DUPLICATE_LOCATION:

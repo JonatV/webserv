@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/09 13:42:45 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/11 17:29:54 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,14 +24,14 @@ class ServerConfig {
 		std::vector<int>						_port;
 		std::string								_host;
 		std::string								_root;
-		std::string								_serverName;
+		std::vector<std::string>				_serverName;
 		size_t									_clientBodyLimit;
 		std::map<int, std::string> 				_errorPages;
 		std::map<std::string, LocationConfig>	_locations;
 
 		// Functions to parse Server
 		std::map<std::string, LocationConfig>	*getLocationConfig(std::vector<std::string> tokens, size_t& i);
-		int										*getPort(std::vector<std::string> tokens, size_t i);
+		std::vector<int>						getPort(std::vector<std::string> tokens, size_t i, size_t &endPos);
 		std::string								*getHost(std::vector<std::string> tokens, size_t i);
 		std::string								*getRoot(std::vector<std::string> tokens, size_t i);
 		size_t									*getClientBodyLimit(std::vector<std::string> tokens, size_t i);
@@ -56,16 +56,19 @@ class ServerConfig {
 			ERROR_INVALID_SERVER_NAME,
 			ERROR_INVALID_ROOT_PATH,
 			ERROR_INVALID_ERROR_PAGE_PATH,
+			ERROR_ROOT_PATH_NOT_FOUND,
+			ERROR_ROOT_PATH_NOT_DIRECTORY,
+			ERROR_ROOT_PATH_NO_ACCESS,
 
 			// Routing & Redirection Errors
-			ERROR_INVALID_REDIRECT = 110,
+			ERROR_INVALID_REDIRECT = 120,
 			ERROR_LOOPING_REDIRECT,
 
 			// Security & Limits
-			ERROR_INVALID_CLIENT_MAX_BODY_SIZE = 120,
+			ERROR_INVALID_CLIENT_MAX_BODY_SIZE = 130,
 
 			// Configuration Key Errors
-    		ERROR_UNKNOWN_KEY = 130
+    		ERROR_UNKNOWN_KEY = 140
 		};
 		
 		// Custom exception class
@@ -92,6 +95,12 @@ class ServerConfig {
 							return "Invalid server name";
 						case ERROR_INVALID_ROOT_PATH:
 							return "Invalid root path in server block";
+						case ERROR_ROOT_PATH_NO_ACCESS:
+							return "Root in server block has no read access";
+						case ERROR_ROOT_PATH_NOT_DIRECTORY:
+							return "Root in server block is not a directory";
+						case ERROR_ROOT_PATH_NOT_FOUND:
+							return "Root path not found in server block";
 						case ERROR_INVALID_REDIRECT:
 							return "Invalid redirection in server block";
 						case ERROR_LOOPING_REDIRECT:
