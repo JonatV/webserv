@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.hpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:12 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/11 18:09:40 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/12 14:06:56 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,6 +36,12 @@ class LocationConfig {
 	public:
 		LocationConfig();
 		~LocationConfig();
+
+		// Getters
+		std::string					getLocationRoot() const;
+		std::string					getLocationIndex() const;
+		std::vector<std::string>	getLocationAllowedMethods() const;
+		bool						getLocationAutoIndex() const;
 
 		friend class ServerConfig;
 		friend class Config;

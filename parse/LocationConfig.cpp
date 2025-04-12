@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/11 18:19:32 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/12 14:10:37 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -151,4 +151,18 @@ bool *LocationConfig::getAutoIndex(std::vector<std::string> tokens) {
 	}
 	bool *result = new bool(autoindex);
 	return result;
+}
+
+// getters <3
+std::string LocationConfig::getLocationRoot() const {
+	return (_locationRoot);
+}
+std::string LocationConfig::getLocationIndex() const {
+	return (_index);
+}
+std::vector<std::string> LocationConfig::getLocationAllowedMethods() const {
+	return (_allowedMethods);
+}
+bool LocationConfig::getLocationAutoIndex() const {
+	return (_autoindex);
 }
