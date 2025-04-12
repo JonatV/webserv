@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/11 11:25:44 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/12 12:24:34 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,6 +46,7 @@ class Server
 		std::map<int, Client *>				_clients;
 		int									_epollFd;
 		WebServer*							_webServer;
+		std::map<std::string, LocationConfig>	_locations;
 		std::vector<int>					_runningPorts;
 		
 		// methods
@@ -62,18 +63,19 @@ class Server
 	public:
 		Server(std::vector<int> ports, WebServer* webserver);
 		~Server();
-		void				run();
-		void				acceptClient(int fd);
-		void				closeClient(struct epoll_event &event, int port);
-		int					treatMethod(struct epoll_event &event, int clientPort);
-		bool				isServerSocket(int fd);
+	void						run();
+	void						acceptClient(int fd);
+	void						closeClient(struct epoll_event &event, int port);
+	int							treatMethod(struct epoll_event &event, int clientPort);
+	bool						isServerSocket(int fd);
+		const LocationConfig*	matchLocation(std::string& path);
 
-		int					getPort() const;
-		std::vector<int>	getServerSocketFds() const;
-		int					getClientPort(int clientSocketFd);
-		std::vector<int>	getRunningPorts() const;
+		int						getPort() const;
+		std::vector<int>		getServerSocketFds() const;
+		int						getClientPort(int clientSocketFd);
+		std::vector<int>		getRunningPorts() const;
 
-		void				setEpollFd(int epollFd);
+		void					setEpollFd(int epollFd);
 };
 
 #endif

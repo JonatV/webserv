@@ -2,6 +2,8 @@
 #define METHOD_HPP
 
 #include "utils.hpp"
+#include "Server.hpp"
+#include "../parse/LocationConfig.hpp"
 #include <iostream>
 #include <string>
 #include <fstream>

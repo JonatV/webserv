@@ -1,14 +1,17 @@
 #include "method.hpp"
 
-std::string method::GET(const std::string& request, int port)
+std::string method::GET(const std::string& request, int port, Server& server)
 {
 	if (!PARSER_GET_RIGHT) throw std::runtime_error(ERROR_403_RESPONSE);
 	std::string	filePath;
+	std::cout << request << std::endl; //dev uncomment
 	size_t start = request.find("GET") + 4; // 4 is to go after "GET "
 	if (start == std::string::npos) throw std::runtime_error(ERROR_400_RESPONSE);
 	size_t end = request.find(" ", start);
 	if (end == std::string::npos) throw std::runtime_error(ERROR_400_RESPONSE);
 	std::string path = request.substr(start, end - start);
+	const LocationConfig* location = server.matchLocation(path); // wip return the correct location
+	
 	if (path == "/stress" || path == "/stress.html")					// stress.html
 		filePath = "./www/stress.html";
 	else if (path == "/" || path == "/index" || path == "/index.html")	// index.html

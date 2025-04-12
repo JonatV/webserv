@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/11 11:25:51 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/11 13:49:25 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -225,6 +225,30 @@ bool Server::isServerSocket(int fd)
 	}
 	return (false);
 }
+
+const LocationConfig* Server::matchLocation(std::string& path)
+{
+	const LocationConfig* bestMatch = nullptr;
+	size_t	bestMatchLength = 0;
+	for (std::map<std::string, LocationConfig>::const_iterator it = _locations.begin(); it != _locations.end(); ++it)
+	{
+		const std::string &locationPath = it->first;
+		if (path == locationPath)
+			return (&it->second);
+		if (locationPath.back() == '/' && path.find(locationPath) == 0)
+		{
+			if (locationPath.length() > bestMatchLength)
+			{
+				bestMatchLength = locationPath.length();
+				bestMatch = &it->second;
+			}
+		}
+	}
+	if (bestMatch)
+		return (bestMatch);
+	return (NULL);
+}
+
 
 int	Server::getClientPort(int fd)
 {
