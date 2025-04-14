@@ -1,33 +1,42 @@
 #include "method.hpp"
 
-std::string method::GET(const std::string& request, int port)
+std::string method::GET(const std::string& request, int port, Server& server)
 {
-	if (!PARSER_GET_RIGHT) throw std::runtime_error(ERROR_403_RESPONSE);
-	std::string	filePath;
-	std::cout << request << std::endl;
+	std::cout << request << std::endl; //dev uncomment
 	size_t start = request.find("GET") + 4; // 4 is to go after "GET "
 	if (start == std::string::npos) throw std::runtime_error(ERROR_400_RESPONSE);
 	size_t end = request.find(" ", start);
 	if (end == std::string::npos) throw std::runtime_error(ERROR_400_RESPONSE);
 	std::string path = request.substr(start, end - start);
-	if (path == "/stress" || path == "/stress.html")					// stress.html
-		filePath = "./www/stress.html";
-	else if (path == "/" || path == "/index" || path == "/index.html")	// index.html
-		filePath = "./www/index.html";
-	else if (path == "/dashboard" || path == "/dashboard.html")			// dashboard.html
-		filePath = "./www/dashboard.html";
-	else if (path == "/delete" || path == "/delete.html")				// delete.html - It will have a special handling for dynamic content
-		filePath = "./www/delete.html";
-	else if (path == "/style/style.css")								// style.css
-		filePath = "./www/style/style.css";
-	else if (path == "/assets/favicon.ico" || path == "/favicon.ico")	// favicon.ico
-		filePath = "./www/assets/favicon.ico";
-	else if (path == "/cgi-bin/test.cgi" || path == "/cgi-bin/test")	// test.cgi
-		filePath = "./www/cgi-bin/test.cgi";
-	else if (path == "/404" || path == "/404error.html")				// 404error.html
-		filePath = "./www/error_pages/404error.html";
-	else
-		filePath = "";
+	const LocationConfig* location = server.matchLocation(path); // wip return the correct location
+	if (!location)
+		throw std::runtime_error(ERROR_404_RESPONSE); // todo that will be a check into error page map
+	if (std::find(location->getLocationAllowedMethods().begin(), location->getLocationAllowedMethods().end(), "GET") == location->getLocationAllowedMethods().end())
+		throw std::runtime_error(ERROR_403_RESPONSE);
+	std::string locationRoot = location->getLocationRoot();
+	std::string locationIndex = location->getLocationIndex();
+	if (locationRoot.empty() || locationIndex.empty())
+		throw std::runtime_error(ERROR_500_RESPONSE);
+	std::string filePath = locationRoot + locationIndex;
+
+	// if (path == "/stress" || path == "/stress.html")					// stress.html
+	// 	filePath = "./www/stress.html";
+	// else if (path == "/" || path == "/index" || path == "/index.html")	// index.html
+	// 	filePath = "./www/index.html";
+	// else if (path == "/dashboard" || path == "/dashboard.html")			// dashboard.html
+	// 	filePath = "./www/dashboard.html";
+	// else if (path == "/delete" || path == "/delete.html")				// delete.html - It will have a special handling for dynamic content
+	// 	filePath = "./www/delete.html";
+	// else if (path == "/style/style.css")								// style.css
+	// 	filePath = "./www/style/style.css";
+	// else if (path == "/assets/favicon.ico" || path == "/favicon.ico")	// favicon.ico
+	// 	filePath = "./www/assets/favicon.ico";
+	// else if (path == "/cgi-bin/test.cgi" || path == "/cgi-bin/test")	// test.cgi
+	// 	filePath = "./www/cgi-bin/test.cgi";
+	// else if (path == "/404" || path == "/404error.html")				// 404error.html
+	// 	filePath = "./www/error_pages/404error.html";
+	// else
+	// 	filePath = "";
 	if (path.find("cgi-bin") != std::string::npos) // todo
 		return (method::handleCGI(path, port));
 	if (!filePath.empty())

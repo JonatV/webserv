@@ -2,6 +2,8 @@
 #define METHOD_HPP
 
 #include "utils.hpp"
+#include "Server.hpp"
+#include "../parse/LocationConfig.hpp"
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -10,6 +12,7 @@
 #include <cstring>
 #include <dirent.h>
 #include <unistd.h>
+#include <algorithm>
 
 #define PARSER_MAX_PAYLOAD 100 // global that has to come from the parser
 #define PARSER_GET_RIGHT 1

@@ -6,14 +6,14 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 15:55:05 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/07 17:59:24 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/11 11:28:17 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "WebServer.hpp"
 #include "Server.hpp"
 
-WebServer::WebServer(std::string& configFile, std::vector<int> ports) : _configFile(configFile), _ports(ports) // dev
+WebServer::WebServer(std::string& configFile, std::vector<std::vector<int>> ports) : _configFile(configFile), _ports(ports) // dev
 {
 	std::cout << "\e[2mCreating WebServer object\e[0m" << std::endl;
 }
@@ -32,10 +32,10 @@ WebServer::~WebServer()
 	_servers.clear();
 	_ports.clear(); //dev 
 	_configFile.clear(); //dev 
-	for (std::map<int, Server*>::iterator it = _fdToServer.begin(); it != _fdToServer.end(); ++it) {
+	for (std::map<int, Server*>::iterator it = _fdsToServer.begin(); it != _fdsToServer.end(); ++it) {
 		close(it->first);
 	}
-	_fdToServer.clear();
+	_fdsToServer.clear();
 	std::cout << "\e[2mDestroying WebServer object\e[0m" << std::endl;
 }
 
@@ -52,14 +52,37 @@ void WebServer::start()
 	}
 	for ( size_t i = 0; i < _servers.size(); i++ )
 	{
-		std::cout << "\e[34m[" << _servers[i]->getPort() << "]\e[0m\t" << "\e[2mStarting server \e[0m" << std::endl;
 		_servers[i]->setEpollFd(sharedEpollFd);
-		_servers[i]->run();
-		// add the server to the map
-		int serverFd = _servers[i]->getServerSocketFd();
-		_fdToServer[serverFd] = _servers[i];
+		try
+		{
+			_servers[i]->run();
+		}
+		catch (const std::runtime_error& e)
+		{
+			std::cout << e.what() << std::endl;
+			continue; // Skip this server and proceed with the next
+		}
+		// add the server to the main socket table (every ports of every servers)
+		const std::vector<int>& serverFds = _servers[i]->getServerSocketFds();
+		for (size_t j = 0; j < serverFds.size(); j++)
+			_fdsToServer[serverFds[j]] = _servers[i];
 	}
-	
+	// check if no server was created
+	bool hasRunningPorts = false;
+	for (size_t i = 0; i < _servers.size(); i++)
+	{
+		if (_servers[i]->getRunningPorts().size() > 0)
+		{
+			hasRunningPorts = true;
+			break;
+		}
+	}
+	if (!hasRunningPorts)
+	{
+		CERR_MSG("____", "No server was created");
+		close(sharedEpollFd);
+		return;
+	}
 	// accept incoming connections continuously. This is the main loop of the webserver
 	struct epoll_event events[MAX_QUEUE];
 	try {
@@ -73,28 +96,33 @@ void WebServer::start()
 			}
 			for (int i = 0; i < numEvents; i++)
 			{
-				
-				Server* server = _fdToServer[events[i].data.fd];
+				Server* server = _fdsToServer[events[i].data.fd];
 				if (server == NULL)
 					continue;
-				if (events[i].data.fd == server->getServerSocketFd())
-					server->acceptClient();
+				if (server->isServerSocket(events[i].data.fd))
+					server->acceptClient(events[i].data.fd);
 				else
 				{
+					int clientPort = server->getClientPort(events[i].data.fd);
+					if (clientPort == -1)
+					{
+						CERR_MSG(server->getPort(), "Error getting client port");
+						continue;
+					}
 					if (events[i].events & EPOLLIN)
 					{
-						int retValue = server->treatMethod(events[i]);
+						int retValue = server->treatMethod(events[i], clientPort);
 						if (retValue == -1)
 						{
-							server->closeClient(events[i]);
-							CERR_MSG(server->getPort(), "Error processing request");
+							server->closeClient(events[i], clientPort);
+							CERR_MSG(clientPort, "Error processing request");
 						}
 						else if (retValue == 0)
-							server->closeClient(events[i]);
+							server->closeClient(events[i], clientPort);
 						
 					}
 					else if ((events[i].events & EPOLLOUT) || (events[i].events & EPOLLERR))
-						server->closeClient(events[i]);
+						server->closeClient(events[i], clientPort);
 				}
 				
 			}
@@ -106,7 +134,7 @@ void WebServer::start()
 	}
 }
 
-void WebServer::dev_addServer(std::vector<int> ports)
+void WebServer::dev_addServer(std::vector<std::vector <int>> ports)
 {
 	for (size_t i = 0; i < ports.size(); i++)
 	{
@@ -117,12 +145,12 @@ void WebServer::dev_addServer(std::vector<int> ports)
 
 void WebServer::registerClientFd(int fd, Server* server)
 {
-	_fdToServer[fd] = server;
+	_fdsToServer[fd] = server;
 }
 
 void WebServer::unregisterClientFd(int fd)
 {
-	_fdToServer.erase(fd);
+	_fdsToServer.erase(fd);
 }
 
 // error handling

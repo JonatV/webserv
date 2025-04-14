@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/07 17:59:17 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/10 17:14:19 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,12 +33,12 @@ class Server;
 class WebServer
 {
 	private:
-		std::vector<Server *> _servers;
-		std::string _configFile;// dev: waiting for the Parser part (could be the filepath)
-		std::vector<int> _ports; //dev
-		std::map<int, Server*> _fdToServer;
+		std::vector<Server *>	_servers;
+		std::string				_configFile;// dev: waiting for the Parser part (could be the filepath)
+		std::vector<std::vector <int>>		_ports; //dev
+		std::map<int, Server *>	_fdsToServer;
 	public:
-		WebServer(std::string &configFile, std::vector<int> ports); // dev: ports is temporary
+		WebServer(std::string &configFile, std::vector<std::vector<int>> ports); // dev: ports is temporary
 		WebServer(std::string &configFile);
 		~WebServer();
 		void start();
@@ -46,7 +46,7 @@ class WebServer
 		void registerClientFd(int fd, Server* server);
 		void unregisterClientFd(int fd);
 	
-		void	dev_addServer(std::vector<int> ports); //dev
+		void	dev_addServer(std::vector<std::vector <int>> ports); //dev
 		// error handling
 		class err_404 : public std::exception
 		{

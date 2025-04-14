@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:10 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/09 13:49:16 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/11 16:52:09 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -157,17 +157,16 @@ std::vector<ServerConfig> *Config::parseServers(std::vector<std::string> tokens)
 			// Process server block until closing brace
 			while (i < tokens.size() && tokens[i] != "}") {
 				if (tokens[i] == "listen") {
-					int *portPtr = server.getPort(tokens, i);
-					int port = *portPtr;
-					delete portPtr;
-					server._port.push_back(port);
-					hasPort = true;
-					i += 2; // Skip "listen" and the port token
-					// Skip semicolon if present
-					if (i < tokens.size() && tokens[i] == ";") {
-						i++;
+					size_t newPos;
+					std::vector<int> ports = server.getPort(tokens, i, newPos);
+					// Add all ports to the server configuration
+					for (size_t p = 0; p < ports.size(); p++) {
+						server._port.push_back(ports[p]);
 					}
-				} 
+					hasPort = true;
+					// Update position to continue after the semicolon
+					i = newPos;
+				}
 				else if (tokens[i] == "host") {
 					std::string *hostPtr = server.getHost(tokens, i);
 					server._host = *hostPtr;
@@ -178,7 +177,7 @@ std::vector<ServerConfig> *Config::parseServers(std::vector<std::string> tokens)
 					if (i < tokens.size() && tokens[i] == ";") {
 						i++;
 					}
-				} 
+				}
 				else if (tokens[i] == "client_max_body_size") {
 					size_t *limitPtr = server.getClientBodyLimit(tokens, i);
 					server._clientBodyLimit = *limitPtr;
@@ -188,22 +187,23 @@ std::vector<ServerConfig> *Config::parseServers(std::vector<std::string> tokens)
 					if (i < tokens.size() && tokens[i] == ";") {
 						i++;
 					}
-				} 
+				}
 				else if (tokens[i] == "server_name") {
 					std::string *namePtr = server.getServerName(tokens, i);
-					server._serverName = *namePtr;
+					// Add the name to the server names vector
+					server._serverName.push_back(*namePtr);
 					delete namePtr;
 					// Check for duplicate server names
-					if (!server._serverName.empty() && serverNames.find(server._serverName) != serverNames.end()) {
+					if (serverNames.find(server._serverName.back()) != serverNames.end()) {
 						throw ServerConfig::ConfigException(ServerConfig::ERROR_DUPLICATE_SERVER);
 					}
-					serverNames.insert(server._serverName);
+					serverNames.insert(server._serverName.back());
 					i += 2; // Skip "server_name" and the name value
-					// Skip semicolon if present
+					// Skip semicolon
 					if (i < tokens.size() && tokens[i] == ";") {
 						i++;
 					}
-				} 
+				}
 				else if (tokens[i] == "error_page") {
 					// Parse error page directive
 					if (i + 2 >= tokens.size()) {
@@ -304,6 +304,9 @@ std::vector<ServerConfig> *Config::parseServers(std::vector<std::string> tokens)
 			}
 			if (!hasHost) {
 				server._host = "127.0.0.1";
+			}
+			if (server._serverName.empty()) {
+				server._serverName.push_back("localhost");
 			}
 			// Check for duplicate server:port combinations
 			for (std::vector<int>::const_iterator portIt = server._port.begin(); portIt != server._port.end(); ++portIt) {
@@ -443,7 +446,14 @@ void Config::displayConfig() const {
 		std::cout << "Host: " << server._host << std::endl;
 		
 		// Display server name
-		std::cout << "Server Name: " << server._serverName << std::endl;
+		std::cout << "Server Names: ";
+		for (size_t i = 0; i < server._serverName.size(); i++) {
+			std::cout << server._serverName[i];
+			if (i < server._serverName.size() - 1) {
+				std::cout << ", ";
+			}
+		}
+		std::cout << std::endl;
 		
 		// Display client body limit
 		std::cout << "Client Body Limit: " << server._clientBodyLimit << " bytes" << std::endl;

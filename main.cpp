@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/02 02:47:49 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/09 12:22:47 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/14 12:54:21 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,46 +18,45 @@
 #include <stdlib.h>
 #include <vector>
 
-bool checkPorts(int ac, char *av[], std::vector<int> &ports)
+std::vector<std::vector<int>> parsePorts(int ac, char *av[])
 {
-	if (ac < 2)
-		return (std::cout << "Use ./web <port>" << std::endl, false);
-	size_t i = 1;
-	while (av[i])
+	std::vector<std::vector<int>> ports;
+
+	for (int i = 1; i < ac; i++)
 	{
-		std::string port = av[i];
-		for (size_t j = 1; av[j] && j != i; j++)
+		std::vector<int> serverPorts;
+		std::string arg(av[i]);
+		std::stringstream ss(arg);
+		std::string port;
+
+		// Split the argument by spaces
+		while (std::getline(ss, port, ' '))
 		{
-			if (port == av[j])
-				return (std::cout << "Port " << port << " is already used" << std::endl, false);
+			if (!port.empty())
+				serverPorts.push_back(std::atoi(port.c_str())); // Convert to int and add to the server's ports
 		}
-		if (port.empty())
-			return (std::cout << "Port cannot be empty" << std::endl, false);
-		if (port[0] == '-')
-			return (std::cout << "Port cannot be negative" << std::endl, false);
-		if (port.size() > 5 || port.size() < 4)
-			return (std::cout << "Port must be between 1024 and 65535" << std::endl, false);
-		for (size_t i = 0; i < port.size(); i++)
-		{
-			if (!isdigit(port[i]))
-				return (std::cout << "Port must be a number" << std::endl, false);
-		}
-		int portNumber = atoi(av[i]);
-		if (portNumber < 1024 || portNumber > 65535)
-			return (std::cout << "Port must be between 1024 and 65535" << std::endl, false);
-		ports.push_back(portNumber);
-		i++;
+
+		ports.push_back(serverPorts); // Add the server's ports to the main vector
 	}
-	return (std::cout << "Port(s) is(are) \e[32mvalid\e[0m" << std::endl, true);
+
+	return ports;
 }
 
 int	main(int ac, char *av[])
 {
-	std::vector<int> ports;
-	// port check //dev
-	// if (!checkPorts(ac, av, ports))
-	// 	return (1);	// print the ports
-
+	std::vector<std::vector<int>> ports;
+	// port check vector constructor //dev
+	ports = parsePorts(ac, av);
+	// print the ports
+	for (size_t i = 0; i < ports.size(); i++)
+	{
+		std::cout << "Server " << i + 1 << " ports: ";
+		for (size_t j = 0; j < ports[i].size(); j++)
+		{
+			std::cout << ports[i][j] << " ";
+		}
+		std::cout << std::endl;
+	}
 	// create the server
 	// declare the web server
 	std::string configFile = "config.conf";
