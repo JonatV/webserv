@@ -2,3 +2,4 @@
 *.o
 webserv
 fr.subject.pdf
+.vscode
