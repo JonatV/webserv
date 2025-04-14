@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:10 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/11 16:52:09 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/14 13:29:28 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -226,17 +226,12 @@ std::vector<ServerConfig> *Config::parseServers(std::vector<std::string> tokens)
 					
 					// Add leading ./ if path doesn't have absolute or relative path indicators
 					if (errorPage[0] != '/' && errorPage[0] != '.' && errorPage[0] != '~') {
-						errorPage = "./../www/error_pages/" + errorPage;
+						errorPage = "./www/error_pages/" + errorPage;
 					}
-					std::cout << errorPage << std::endl;
 					// Path validation
 					struct stat path_stat;
 					if (stat(errorPage.c_str(), &path_stat) != 0) {
 						// Path doesn't exist
-						throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_ERROR_PAGE);
-					}
-					if (!S_ISDIR(path_stat.st_mode)) {
-						// Path exists but is not a directory
 						throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_ERROR_PAGE);
 					}
 					// Check access permissions
@@ -474,6 +469,8 @@ void Config::displayConfig() const {
 			const LocationConfig& loc = it->second;
 			
 			// Display location details
+			std::cout << "    Location name: " << loc._locationName <<  std::endl;
+
 			std::cout << "    Index: " << loc._index << std::endl;
 			
 			std::cout << "    Allowed Methods: ";

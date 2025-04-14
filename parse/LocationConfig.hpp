@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:12 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/14 12:38:07 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/14 12:56:33 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ class LocationConfig {
 		bool						_autoindex;
 
 		// Functions to parse location
-		std::string *LocationConfig::getIndex(std::vector<std::string> tokens, size_t i, const std::string& rootPath);
+		std::string *getIndex(std::vector<std::string> tokens, size_t i, const std::string& rootPath);
 		std::string	*getAllowedMethods(std::vector<std::string> tokens);
 		std::string *getRoot(std::vector<std::string> tokens, size_t i);
 		bool		*getAutoIndex(std::vector<std::string> tokens);

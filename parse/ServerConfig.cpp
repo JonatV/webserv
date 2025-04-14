@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:17 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/14 12:49:05 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/14 13:15:54 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 #include <unistd.h>
 
 // ServerConfig Constructor & Destructor
-ServerConfig::ServerConfig() : _clientBodyLimit(100000) {
+ServerConfig::ServerConfig() : _clientBodyLimit(100000), _root("./www/") {
     // Initialize with default values
 }
 
@@ -132,7 +132,6 @@ std::string *ServerConfig::getRoot(std::vector<std::string> tokens, size_t i) {
 	if (i + 1 >= tokens.size() || tokens[i + 1] != ";") {
 		throw ConfigException(ERROR_INVALID_ROOT_PATH); // Missing semicolon
 	}
-
 	// Check if path is a directory and accessible
 	struct stat path_stat;
 	if (stat(path.c_str(), &path_stat) != 0) {

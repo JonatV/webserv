@@ -3,17 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
+/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/12 14:10:37 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/14 13:14:24 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "LocationConfig.hpp"
 
-LocationConfig::LocationConfig() : _autoindex(false) {
-	_locationRoot = "./www/";
+LocationConfig::LocationConfig() : _autoindex(false), _locationRoot("./www/") {
     // Initialize with default values
 }
 
@@ -112,6 +111,8 @@ std::string *LocationConfig::getRoot(std::vector<std::string> tokens, size_t i) 
 	if (i + 1 >= tokens.size() || tokens[i + 1] != ";") {
 		throw ConfigException(ERROR_INVALID_ROOT_PATH); // Missing semicolon
 	}
+
+	std::cout << path << std::endl;
 	// Check if path is a directory and accessible
 	struct stat path_stat;
 	if (stat(path.c_str(), &path_stat) != 0) {
