@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServer.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
+/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/10 17:14:19 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/14 15:00:01 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #define WEBSERVER_HPP
 
 #include "utils.hpp"
+#include "../parse/Config.hpp"
 #include <vector>
 #include <iostream>
 #include <string>
@@ -34,19 +35,16 @@ class WebServer
 {
 	private:
 		std::vector<Server *>	_servers;
-		std::string				_configFile;// dev: waiting for the Parser part (could be the filepath)
-		std::vector<std::vector <int>>		_ports; //dev
 		std::map<int, Server *>	_fdsToServer;
 	public:
-		WebServer(std::string &configFile, std::vector<std::vector<int>> ports); // dev: ports is temporary
-		WebServer(std::string &configFile);
+		WebServer(Config &);
 		~WebServer();
 		void start();
 		
 		void registerClientFd(int fd, Server* server);
 		void unregisterClientFd(int fd);
+		void initServers(Config &config);
 	
-		void	dev_addServer(std::vector<std::vector <int>> ports); //dev
 		// error handling
 		class err_404 : public std::exception
 		{

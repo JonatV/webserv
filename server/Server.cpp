@@ -3,17 +3,18 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
+/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/11 13:49:25 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/14 15:10:31 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 #include "WebServer.hpp"
 
-Server::Server(std::vector<int> ports, WebServer* webserver) : _ports(ports), _epollFd(-1), _webServer(webserver), _runningPorts({})
+Server::Server(std::vector<int>ports, std::string host, std::string root, std::vector<std::string> serverName, size_t clientBodyLimit, std::map<int, std::string> errorPages, std::map<std::string, LocationConfig> locations, WebServer* webserver)
+: _ports(ports), _host(host), _root(root), _serverName(serverName), _clientBodyLimit(clientBodyLimit), _errorPages(errorPages), _locations(locations), _epollFd(-1), _webServer(webserver), _runningPorts({})
 {
 	for (size_t i = 0; i < ports.size(); i++)
 	{
@@ -122,7 +123,7 @@ std::string	Server::selectMethod(char buffer[BUFFER_SIZE], int port)
 		throw std::runtime_error(ERROR_400_RESPONSE);
 	std::string methodName = request.substr(0, end);
 	if (methodName == "GET")
-		return (method::GET(request, port));
+		return (method::GET(request, port, *this));
 	else if (methodName == "POST")
 		return (method::POST(request, port));
 	else if (methodName == "DELETE")

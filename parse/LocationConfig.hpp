@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:12 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/14 12:56:33 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/14 14:45:29 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,6 +46,7 @@ class LocationConfig {
 
 		friend class ServerConfig;
 		friend class Config;
+		friend class WebServer;
 		
 		// Different possible errors from the location part of the config file
 		enum e_error {

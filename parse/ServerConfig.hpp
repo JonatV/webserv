@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/14 12:48:04 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/14 14:45:03 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,6 +43,7 @@ class ServerConfig {
 
 		// So that I can access private attributes in the config class
 		friend class Config;
+		friend class WebServer;
 		
 		// Different possible errors for the server part of the config file
 		enum e_error {

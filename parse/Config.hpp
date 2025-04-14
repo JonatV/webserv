@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:08 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/09 13:44:03 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/14 14:44:46 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,7 @@ class Config {
 		public:
 		Config();
 		~Config();
-		
+		friend class WebServer;
 		// Function to parse file
 		bool 						*parseFile(const std::string& filename);
 		

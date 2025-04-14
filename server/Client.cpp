@@ -3,17 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
+/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:12:55 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/02 04:39:50 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/14 15:05:27 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
 
-Client::Client(int clientSocketFd, struct sockaddr_in _clientSocketId, int serverPort)
-	: _clientSocketFd(clientSocketFd), _clientSocketId(_clientSocketId), _serverPort(serverPort)
+Client::Client(int clientSocketFd, struct sockaddr_in clientSocketId, int serverPort)
+	: _clientSocketFd(clientSocketFd), _clientSocketId(clientSocketId), _serverPort(serverPort)
 {
 	std::cout << "\e[34m[" << _serverPort << "]\e[0m\t" << "\e[2mCreating Client object\e[0m" << std::endl;
 	_clientPort = ntohs(_clientSocketId.sin_port);

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
+/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/12 12:24:34 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/14 15:08:41 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 
 #include "Client.hpp"
 #include "method.hpp"
+#include "../parse/LocationConfig.hpp"
 #include <vector>
 #include <map>
 #include <iostream>
@@ -39,14 +40,22 @@ class WebServer;
 class Server
 {
 	private:
-		std::vector<int>					_ports; // Parser
+		// Parser informations
+		std::vector<int>					_ports;
+		std::string								_host;
+		std::string								_root;
+		std::vector<std::string>				_serverName;
+		size_t									_clientBodyLimit;
+		std::map<int, std::string> 				_errorPages;
+		std::map<std::string, LocationConfig>	_locations;
+
+		// Server
 		std::vector<int>					_serverSocketFds;
 		std::vector<struct sockaddr_in>		_serverSocketIds;
 		std::map<int, int>					_socketFdToPort;
 		std::map<int, Client *>				_clients;
 		int									_epollFd;
 		WebServer*							_webServer;
-		std::map<std::string, LocationConfig>	_locations;
 		std::vector<int>					_runningPorts;
 		
 		// methods
@@ -61,7 +70,8 @@ class Server
 		Server& operator=(const Server& other);
 		
 	public:
-		Server(std::vector<int> ports, WebServer* webserver);
+		Server(std::vector<int>ports, std::string host, std::string root, std::vector<std::string> serverName, size_t clientBodyLimit, std::map<int, std::string> errorPages, std::map<std::string, LocationConfig> locations, WebServer* webserver);
+
 		~Server();
 	void						run();
 	void						acceptClient(int fd);

@@ -3,24 +3,20 @@
 /*                                                        :::      ::::::::   */
 /*   WebServer.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
+/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 15:55:05 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/11 11:28:17 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/14 15:12:34 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "WebServer.hpp"
 #include "Server.hpp"
 
-WebServer::WebServer(std::string& configFile, std::vector<std::vector<int>> ports) : _configFile(configFile), _ports(ports) // dev
+WebServer::WebServer(Config& configFile)
 {
 	std::cout << "\e[2mCreating WebServer object\e[0m" << std::endl;
-}
-
-WebServer::WebServer(std::string& configFile) : _configFile(configFile)
-{
-	std::cout << "\e[2mCreating WebServer object\e[0m" << std::endl;
+	initServers(configFile);
 }
 
 WebServer::~WebServer()
@@ -30,8 +26,6 @@ WebServer::~WebServer()
 		delete _servers[i];
 	}
 	_servers.clear();
-	_ports.clear(); //dev 
-	_configFile.clear(); //dev 
 	for (std::map<int, Server*>::iterator it = _fdsToServer.begin(); it != _fdsToServer.end(); ++it) {
 		close(it->first);
 	}
@@ -39,11 +33,20 @@ WebServer::~WebServer()
 	std::cout << "\e[2mDestroying WebServer object\e[0m" << std::endl;
 }
 
+
+void WebServer::initServers(Config &config)
+{
+	for (size_t i = 0; i < config._servers.size(); i++)
+	{
+		_servers.push_back(new Server(config._servers[i]._port, config._servers[i]._host, config._servers[i]._root, config._servers[i]._serverName, config._servers[i]._clientBodyLimit, config._servers[i]._errorPages, config._servers[i]._locations, this));
+	}
+}
+
+
 void WebServer::start()
 {
 	std::cout << "\e[2mStarting WebServer\e[0m" << std::endl;
 	// Create the servers
-	dev_addServer(_ports); // dev PARSER
 	int sharedEpollFd = epoll_create1(0);
 	if (sharedEpollFd == -1)
 	{
@@ -133,15 +136,6 @@ void WebServer::start()
 		close(sharedEpollFd);
 	}
 }
-
-void WebServer::dev_addServer(std::vector<std::vector <int>> ports)
-{
-	for (size_t i = 0; i < ports.size(); i++)
-	{
-		_servers.push_back(new Server(ports[i], this));
-	}
-}
-
 
 void WebServer::registerClientFd(int fd, Server* server)
 {

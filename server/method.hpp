@@ -78,9 +78,10 @@ const std::string POST_201_RESPONSE =
 	"\r\n"
 	"<html><body><h1>201 Created</h1><p>File created.</p></body></html>";
 
+class Server;
 namespace method
 {
-	std::string GET(const std::string& request, int port);
+	std::string GET(const std::string& request, int port, Server &server);
 	std::string POST(const std::string &request, int port);
 	std::string DELETE(const std::string& request, int port);
 	

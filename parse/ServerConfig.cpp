@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:17 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/14 13:15:54 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/14 15:11:05 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 #include <unistd.h>
 
 // ServerConfig Constructor & Destructor
-ServerConfig::ServerConfig() : _clientBodyLimit(100000), _root("./www/") {
+ServerConfig::ServerConfig() : _root("./www/"), _clientBodyLimit(100000) {
     // Initialize with default values
 }
 
