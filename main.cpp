@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
+/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/02 02:47:49 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/04 16:20:26 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/09 12:22:47 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,8 +55,8 @@ int	main(int ac, char *av[])
 {
 	std::vector<int> ports;
 	// port check //dev
-	if (!checkPorts(ac, av, ports))
-		return (1);	// print the ports
+	// if (!checkPorts(ac, av, ports))
+	// 	return (1);	// print the ports
 
 	// create the server
 	// declare the web server
@@ -65,4 +65,41 @@ int	main(int ac, char *av[])
 	webServer.start();
 }
 
+// int main(int argc, char **argv) {
+// 	if (argc != 2) {
+// 		std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
+// 		return 1;
+// 	}
 
+// 	Config config;
+
+// 	try {
+// 		bool *resultPtr = config.parseFile(argv[1]);
+// 		bool result = *resultPtr;
+// 		delete resultPtr;
+		
+// 		if (result) {
+// 			std::cout << "Configuration successfully parsed." << std::endl;
+// 			config.displayConfig();
+// 			return 0;
+// 		}
+// 	} 
+// 	catch (Config::ConfigException& e) {
+// 		std::cerr << "Error parsing configuration: " << e.what() << " (code: " << e.getCode() << ")" << std::endl;
+// 		return 1;
+// 	}
+// 	catch (ServerConfig::ConfigException& e) {
+// 		std::cerr << "Error parsing server configuration: " << e.what() << " (code: " << e.getCode() << ")" << std::endl;
+// 		return 1;
+// 	}
+// 	catch (LocationConfig::ConfigException& e) {
+// 		std::cerr << "Error parsing location configuration: " << e.what() << " (code: " << e.getCode() << ")" << std::endl;
+// 		return 1;
+// 	}
+// 	catch (const std::exception& e) {
+// 		std::cerr << "Unexpected error: " << e.what() << std::endl;
+// 		return 1;
+// 	}
+
+// 	return 0;
+// }
