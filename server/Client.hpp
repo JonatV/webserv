@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/14 15:04:28 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/15 10:29:39 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,6 @@ class Client
 	private:
 		int					_clientSocketFd;
 		struct sockaddr_in	_clientSocketId;
-		int					_clientPort;
 		char				_clientIp[INET_ADDRSTRLEN];
 		std::string 		_requestHeader;
 		std::string 		_responseHeader;
