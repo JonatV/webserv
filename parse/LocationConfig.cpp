@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/14 15:17:35 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/15 09:51:44 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,9 @@ std::string *LocationConfig::getIndex(std::vector<std::string> tokens, size_t i,
 		throw ConfigException(ERROR_INVALID_INDEX_FILES);
 	}
 	// Check for HTML extension
-	if (indexName.length() < 5 || (indexName.substr(indexName.length() - 5) != ".html" && indexName.substr(indexName.length() - 4) != ".css")) {
+	if (indexName.length() < 5 || (indexName.substr(indexName.length() - 5) != ".html" 
+		&& indexName.substr(indexName.length() - 4) != ".css"
+		&& indexName.substr(indexName.length() - 4) != ".ico")) {
 		throw ConfigException(ERROR_INVALID_INDEX_FORMAT);
 	}
 	// Check for semicolon
