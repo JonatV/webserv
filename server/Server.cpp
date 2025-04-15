@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/14 15:10:31 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/15 11:37:11 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -103,7 +103,7 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 	}
 	catch (const std::runtime_error &e)
 	{
-		std::string errorResponse = method::getErrorHtml(clientPort, e.what());
+		std::string errorResponse = method::getErrorHtml(clientPort, e.what(), *this);
 		if (errorResponse.empty())
 			errorResponse = ERROR_500_RESPONSE;
 		if (send(clientSocketFd, errorResponse.c_str(), errorResponse.size(), 0) == -1)
@@ -230,26 +230,14 @@ bool Server::isServerSocket(int fd)
 const LocationConfig* Server::matchLocation(std::string& path)
 {
 	const LocationConfig* bestMatch = nullptr;
-	size_t	bestMatchLength = 0;
 	for (std::map<std::string, LocationConfig>::const_iterator it = _locations.begin(); it != _locations.end(); ++it)
 	{
 		const std::string &locationPath = it->first;
 		if (path == locationPath)
 			return (&it->second);
-		if (locationPath.back() == '/' && path.find(locationPath) == 0)
-		{
-			if (locationPath.length() > bestMatchLength)
-			{
-				bestMatchLength = locationPath.length();
-				bestMatch = &it->second;
-			}
-		}
 	}
-	if (bestMatch)
-		return (bestMatch);
-	return (NULL);
+	return (bestMatch);
 }
-
 
 int	Server::getClientPort(int fd)
 {
@@ -291,4 +279,9 @@ void Server::setEpollFd(int epollFd)
 std::vector<int> Server::getRunningPorts() const
 {
 	return (_runningPorts);
+}
+
+std::map<int, std::string> Server::getErrorPages() const
+{
+	return (_errorPages);
 }

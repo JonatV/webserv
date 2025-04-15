@@ -86,7 +86,7 @@ namespace method
 	std::string DELETE(const std::string& request, int port);
 	
 	std::string foundPage(const std::string& filePath, int port);
-	std::string getErrorHtml(int port, const std::string& errorMessage);
+	std::string getErrorHtml(int port, const std::string& errorMessage, Server &server);
 	
 	std::vector<std::string> listFiles();
 	std::string generateDeletePage();

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/14 15:08:41 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/15 11:04:59 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,6 +84,7 @@ class Server
 		std::vector<int>		getServerSocketFds() const;
 		int						getClientPort(int clientSocketFd);
 		std::vector<int>		getRunningPorts() const;
+		std::map<int, std::string> getErrorPages() const;
 
 		void					setEpollFd(int epollFd);
 };

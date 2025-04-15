@@ -17,6 +17,7 @@ std::string method::GET(const std::string& request, int port, Server& server)
 	if (locationRoot.empty() || locationIndex.empty())
 		throw std::runtime_error(ERROR_500_RESPONSE);
 	std::string filePath = locationRoot + locationIndex;
+	std::cout << filePath << " vs " << locationRoot + path << std::endl; // dev
 
 	// if (path == "/stress" || path == "/stress.html")					// stress.html
 	// 	filePath = "./www/stress.html";
@@ -68,7 +69,7 @@ std::string method::foundPage(const std::string& filepath, int port)
 		throw std::runtime_error(ERROR_404_RESPONSE);
 }
 
-std::string method::getErrorHtml(int port, const std::string& errorMessage)
+std::string method::getErrorHtml(int port, const std::string& errorMessage, Server &server)
 {
 	std::string errorCode;
 	size_t posStart = errorMessage.find(" ");
@@ -80,26 +81,40 @@ std::string method::getErrorHtml(int port, const std::string& errorMessage)
 		if (errorCode.length() != 3)
 			errorCode = "500";
 	}
-	std::string errorFilePath = "./www/error_pages/" + errorCode + "error.html";
-	CERR_MSG(port, "GET Sending error " + errorCode + ": " + errorFilePath);
-	std::ifstream file(errorFilePath.c_str());
-	if (file.is_open())
+	// check iun the server map error page
+	std::map<int, std::string> errorPages = server.getErrorPages();
+	int errorCodeInt = atoi(errorCode.c_str());
+	if (errorPages.find(errorCodeInt) != errorPages.end())
 	{
-		std::string content = gnl(file);
-		std::string errorType;
-		size_t posEnd = errorMessage.find("\r\n", posStart);
-		if (posEnd == std::string::npos)
-			return ("");
+		std::string errorFilePath = errorPages[errorCodeInt];
+		CERR_MSG(port, "GET Sending error " + errorCode + ": " + errorFilePath);
+		std::ifstream file(errorFilePath.c_str());
+		if (file.is_open())
+		{
+			std::string content = gnl(file);
+			std::string errorType;
+			size_t posEnd = errorMessage.find("\r\n", posStart);
+			if (posEnd == std::string::npos)
+				return ("");
+			else
+				errorType = errorMessage.substr(posStart + 4, posEnd - posStart - 4);
+			return (
+				"HTTP/1.1 " + errorCode + " " + errorType + "\r\n"
+				"Content-Type: text/html\r\n"
+				"Content-Length: " + to_string(content.length()) + "\r\n"
+				"\r\n" + content);
+		}
 		else
-			errorType = errorMessage.substr(posStart + 4, posEnd - posStart - 4);
-		return (
-			"HTTP/1.1 " + errorCode + " " + errorType + "\r\n"
-			"Content-Type: text/html\r\n"
-			"Content-Length: " + to_string(content.length()) + "\r\n"
-			"\r\n" + content);
+		{
+			CERR_MSG(port, "GET Sending error " + errorCode + ": " + errorMessage);
+			return (errorMessage);
+		}
 	}
 	else
+	{
+		CERR_MSG(port, "GET Sending error " + errorCode + ": " + errorMessage);
 		return (errorMessage);
+	}
 }
 
 std::string method::POST(const std::string& request, int port)
