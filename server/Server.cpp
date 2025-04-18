@@ -285,3 +285,8 @@ std::map<int, std::string> Server::getErrorPages() const
 {
 	return (_errorPages);
 }
+
+ssize_t Server::getClientBodyLimit() const
+{
+	return (_clientBodyLimit);
+}

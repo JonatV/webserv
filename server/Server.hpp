@@ -45,7 +45,7 @@ class Server
 		std::string								_host;
 		std::string								_root;
 		std::vector<std::string>				_serverName;
-		size_t									_clientBodyLimit;
+		ssize_t									_clientBodyLimit;
 		std::map<int, std::string> 				_errorPages;
 		std::map<std::string, LocationConfig>	_locations;
 
@@ -80,11 +80,7 @@ class Server
 	bool						isServerSocket(int fd);
 		const LocationConfig*	matchLocation(std::string& path);
 
-		int						getPort() const;
-		std::vector<int>		getServerSocketFds() const;
-		int						getClientPort(int clientSocketFd);
-		std::vector<int>		getRunningPorts() const;
-		std::map<int, std::string> getErrorPages() const;
+		ssize_t						getClientBodyLimit() const;
 
 		void					setEpollFd(int epollFd);
 };
