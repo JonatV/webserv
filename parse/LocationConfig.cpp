@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/15 09:51:44 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/18 15:22:15 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,8 @@ std::string *LocationConfig::getIndex(std::vector<std::string> tokens, size_t i,
 	// Check for HTML extension
 	if (indexName.length() < 5 || (indexName.substr(indexName.length() - 5) != ".html" 
 		&& indexName.substr(indexName.length() - 4) != ".css"
-		&& indexName.substr(indexName.length() - 4) != ".ico")) {
+		&& indexName.substr(indexName.length() - 4) != ".ico"
+		&& indexName.substr(indexName.length() - 4) != ".txt")) {
 		throw ConfigException(ERROR_INVALID_INDEX_FORMAT);
 	}
 	// Check for semicolon
