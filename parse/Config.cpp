@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:10 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/14 15:00:16 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/18 12:16:24 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -179,7 +179,7 @@ std::vector<ServerConfig> *Config::parseServers(std::vector<std::string> tokens)
 					}
 				}
 				else if (tokens[i] == "client_max_body_size") {
-					size_t *limitPtr = server.getClientBodyLimit(tokens, i);
+					ssize_t *limitPtr = server.getClientBodyLimit(tokens, i);
 					server._clientBodyLimit = *limitPtr;
 					delete limitPtr;
 					i += 2; // Skip "client_max_body_size" and the size value

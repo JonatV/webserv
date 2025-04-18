@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:17 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/14 15:11:05 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/18 12:15:55 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,7 +153,7 @@ std::string *ServerConfig::getRoot(std::vector<std::string> tokens, size_t i) {
 }
 
 // Parse client body size limit from configuration tokens
-size_t *ServerConfig::getClientBodyLimit(std::vector<std::string> tokens, size_t i) {
+ssize_t *ServerConfig::getClientBodyLimit(std::vector<std::string> tokens, size_t i) {
 	// Check if we have enough tokens
 	if (i + 1 >= tokens.size()) {
 		throw ConfigException(ERROR_INVALID_CLIENT_MAX_BODY_SIZE);
@@ -161,7 +161,7 @@ size_t *ServerConfig::getClientBodyLimit(std::vector<std::string> tokens, size_t
 	// Skip the "client_max_body_size" token
 	i++;
 
-	size_t limit = 0;
+	ssize_t limit = 0;
 
 	// Check if next token is a valid size
 	try {
@@ -182,7 +182,7 @@ size_t *ServerConfig::getClientBodyLimit(std::vector<std::string> tokens, size_t
 	if (i + 1 < tokens.size() && tokens[i + 1] != ";") {
 		throw ConfigException(ERROR_INVALID_CLIENT_MAX_BODY_SIZE); // Missing semicolon
 	}
-	size_t *result = new size_t(limit);
+	ssize_t *result = new ssize_t(limit);
 	return result;
 }
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/14 14:45:03 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/04/18 12:16:18 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ class ServerConfig {
 		std::string								_host;
 		std::string								_root;
 		std::vector<std::string>				_serverName;
-		size_t									_clientBodyLimit;
+		ssize_t									_clientBodyLimit;
 		std::map<int, std::string> 				_errorPages;
 		std::map<std::string, LocationConfig>	_locations;
 
@@ -34,7 +34,7 @@ class ServerConfig {
 		std::vector<int>						getPort(std::vector<std::string> tokens, size_t i, size_t &endPos);
 		std::string								*getHost(std::vector<std::string> tokens, size_t i);
 		std::string								*getRoot(std::vector<std::string> tokens, size_t i);
-		size_t									*getClientBodyLimit(std::vector<std::string> tokens, size_t i);
+		ssize_t									*getClientBodyLimit(std::vector<std::string> tokens, size_t i);
 		std::string								*getServerName(std::vector<std::string> tokens, size_t i);
 
 	public:
