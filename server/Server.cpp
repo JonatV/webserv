@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/18 13:14:29 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/18 16:58:13 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -227,16 +227,51 @@ bool Server::isServerSocket(int fd)
 	return (false);
 }
 
+//	exact match :
+//		"/delete" - "/uploads/" - "dir/folder/index.html"
+//	Ambiguous match:
+//		"/uploads/file.txt"				for closest location "/uploads/"
+//		"/uploads/assets/profile.txt"	for closest location "/uploads/assets/"
+//	
 const LocationConfig* Server::matchLocation(std::string& path)
 {
 	const LocationConfig* bestMatch = nullptr;
+	size_t bestLength = 0;
 	for (std::map<std::string, LocationConfig>::const_iterator it = _locations.begin(); it != _locations.end(); ++it)
 	{
 		const std::string &locationPath = it->first;
+		// exact match
 		if (path == locationPath)
+		{
+			if (locationPath.back() == '/' && it->second.getLocationAutoIndex() == false)
+			{
+				std::cout << "\e[31m======= autoindex OFF for " << locationPath << "\e[0m" << std::endl;
+				return (nullptr);
+			}
+			std::cout << "\e[32m======= exact match for " << path << " is " << locationPath << "\e[0m" << std::endl;
 			return (&it->second);
+		}
+		// prefix match
+		if (path.compare(0, locationPath.length(), locationPath) == 0)
+		{
+			if (locationPath.length() > bestLength)
+			{
+				bestLength = locationPath.length();
+				bestMatch = &it->second;
+				std::cout << "======= current best match for " << path << " is " << locationPath << std::endl;
+			}
+		}
 	}
-	return (bestMatch);
+	if (bestMatch->getLocationAutoIndex() == true)
+	{
+		std::cout << "\e[32m======= best match for " << path << " is " << bestMatch->getLocationRoot() << "\e[0m" << std::endl;
+		return (bestMatch);
+	}
+	else
+	{
+		std::cout << "\e[31m======= autoindex OFF for " << bestMatch->getLocationRoot() << "\e[0m" << std::endl;
+		return (nullptr);
+	}
 }
 
 int	Server::getClientPort(int fd)

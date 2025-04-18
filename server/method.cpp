@@ -8,7 +8,7 @@ std::string method::GET(const std::string& request, int port, Server& server)
 	std::string path = request.substr(start, end - start);
 	const LocationConfig* location = server.matchLocation(path); // wip return the correct location
 	if (!location)
-		throw std::runtime_error(ERROR_404_RESPONSE); // todo that will be a check into error page map
+		throw std::runtime_error(ERROR_404_RESPONSE);
 	if (checkPermissions("GET", location) == false)
 		throw std::runtime_error(ERROR_403_RESPONSE);
 	std::string locationRoot = location->getLocationRoot();
