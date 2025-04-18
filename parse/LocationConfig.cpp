@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/18 15:22:15 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/18 17:44:54 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -158,6 +158,9 @@ bool *LocationConfig::getAutoIndex(std::vector<std::string> tokens) {
 }
 
 // getters <3
+std::string LocationConfig::getLocationName() const {
+	return (_locationName);
+}
 std::string LocationConfig::getLocationRoot() const {
 	return (_locationRoot);
 }
