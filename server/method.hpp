@@ -14,10 +14,6 @@
 #include <unistd.h>
 #include <algorithm>
 
-#define PARSER_MAX_PAYLOAD 100 // global that has to come from the parser
-#define PARSER_GET_RIGHT 1
-#define PARSER_POST_RIGHT 1
-#define PARSER_DELETE_RIGHT 1
 #define CGI1 "test.cgi"
 #define CGI2 "myscript.cgi"
 #define CERR_MSG(port, msg) std::cerr << "\e[31m[" + to_string(port) + "]\e[0m\t" + "\e[2m" + msg + "\e[0m" << std::endl
@@ -82,20 +78,22 @@ class Server;
 namespace method
 {
 	std::string GET(const std::string& request, int port, Server &server);
-	std::string POST(const std::string &request, int port);
-	std::string DELETE(const std::string& request, int port);
+	std::string POST(const std::string &request, int port, Server &server);
+	std::string DELETE(const std::string& request, int port, Server &server);
 	
 	std::string foundPage(const std::string& filePath, int port);
 	std::string getErrorHtml(int port, const std::string& errorMessage, Server &server);
 	
-	std::vector<std::string> listFiles();
-	std::string generateDeletePage();
-	std::string generateListHtml(std::vector<std::string> allFiles);
-	std::string handleDeleteRequest(const std::string& request);
-	std::string deleteTargetFiles(std::vector<std::string>);
-	std::string trimFileName(std::string);
-	std::string postFromDashboard(const std::string &request);
-
+	std::vector<std::string> listFiles(const char* path);
+	std::string	generateDeletePage();
+	std::string	generateListHtml(std::vector<std::string> allFiles, const std::string& path);
+	std::string	handleDeleteRequest(const std::string& request);
+	std::string	deleteTargetFiles(std::vector<std::string>);
+	std::string	trimFileName(std::string);
+	std::string	postFromDashboard(const std::string &request, Server &server);
+	std::string	postFromTerminal(const std::string &request, Server &server);
+	bool		checkPermissions(const std::string& type, const LocationConfig* location);
+	
 	// CGI
 	std::string handleCGI(const std::string& request, int port);
 

@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/15 11:37:11 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/18 13:14:29 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -125,9 +125,9 @@ std::string	Server::selectMethod(char buffer[BUFFER_SIZE], int port)
 	if (methodName == "GET")
 		return (method::GET(request, port, *this));
 	else if (methodName == "POST")
-		return (method::POST(request, port));
+		return (method::POST(request, port, *this));
 	else if (methodName == "DELETE")
-		return (method::DELETE(request, port));
+		return (method::DELETE(request, port, *this));
 	else
 		throw std::runtime_error(ERROR_405_RESPONSE);
 }

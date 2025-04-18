@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/15 11:04:59 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/18 12:15:15 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@
 
 #define MAX_QUEUE 10
 #define BUFFER_SIZE 2048
+#define UPLOAD_PATH "./www/uploads/"
 #define THROW_MSG(port, msg) throw std::runtime_error("\e[31m[" + to_string(port) + "]\e[0m\t" + "\e[2m" + msg + "\e[0m")
 #define COUT_MSG(port, msg) std::cout << "\e[34m[" + to_string(port) + "]\e[0m\t" + "\e[2m" + msg + "\e[0m" << std::endl
 
@@ -41,7 +42,7 @@ class Server
 {
 	private:
 		// Parser informations
-		std::vector<int>					_ports;
+		std::vector<int>						_ports;
 		std::string								_host;
 		std::string								_root;
 		std::vector<std::string>				_serverName;
@@ -50,13 +51,13 @@ class Server
 		std::map<std::string, LocationConfig>	_locations;
 
 		// Server
-		std::vector<int>					_serverSocketFds;
-		std::vector<struct sockaddr_in>		_serverSocketIds;
-		std::map<int, int>					_socketFdToPort;
-		std::map<int, Client *>				_clients;
-		int									_epollFd;
-		WebServer*							_webServer;
-		std::vector<int>					_runningPorts;
+		std::vector<int>						_serverSocketFds;
+		std::vector<struct sockaddr_in>			_serverSocketIds;
+		std::map<int, int>						_socketFdToPort;
+		std::map<int, Client *>					_clients;
+		int										_epollFd;
+		WebServer*								_webServer;
+		std::vector<int>						_runningPorts;
 		
 		// methods
 		int					setNonBlocking(int fd);
@@ -73,13 +74,18 @@ class Server
 		Server(std::vector<int>ports, std::string host, std::string root, std::vector<std::string> serverName, size_t clientBodyLimit, std::map<int, std::string> errorPages, std::map<std::string, LocationConfig> locations, WebServer* webserver);
 
 		~Server();
-	void						run();
-	void						acceptClient(int fd);
-	void						closeClient(struct epoll_event &event, int port);
-	int							treatMethod(struct epoll_event &event, int clientPort);
-	bool						isServerSocket(int fd);
+		void						run();
+		void						acceptClient(int fd);
+		void						closeClient(struct epoll_event &event, int port);
+		int							treatMethod(struct epoll_event &event, int clientPort);
+		bool						isServerSocket(int fd);
 		const LocationConfig*	matchLocation(std::string& path);
 
+		int							getPort() const;
+		std::vector<int>			getServerSocketFds() const;
+		int							getClientPort(int clientSocketFd);
+		std::vector<int>			getRunningPorts() const;
+		std::map<int, std::string>	getErrorPages() const;
 		ssize_t						getClientBodyLimit() const;
 
 		void					setEpollFd(int epollFd);
