@@ -191,3 +191,35 @@ input[type="checkbox"] {
 li:has(input[type="checkbox"]:checked) {
 	background-color: var(--secondary-color);
 }
+
+/* autoindex.html */
+
+ul.file_list {
+	list-style-type: none;
+	padding: 0;
+	margin: 0;
+}
+
+.file_list li {
+	padding: 10px;
+	margin-bottom: 10px;
+	border: 1px solid var(--primary-color);
+	border-radius: 5px;
+	background-color: transparent;
+	transition: background-color 0.3s ease;
+}
+.file_list li:hover {
+	background-color: var(--dark-secondary-color);
+}
+
+.file_link {
+	color: var(--primary-color);
+	text-decoration: none;
+	font-weight: bold;
+	transition: color 0.3s ease;
+}
+
+.file_link:hover {
+	color: var(--secondary-color);
+	text-decoration: underline;
+}

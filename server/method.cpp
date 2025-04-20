@@ -393,9 +393,9 @@ std::string method::generateAutoIndexPage(const LocationConfig* location)
 		std::string content = gnl(file);
 		std::vector<std::string> allFiles = listFiles(location->getLocationRoot().c_str());
 		std::string htmlList = generateListHrefHtml(allFiles);
-		size_t pos = content.find("<span>Directory is empty</span>");
+		size_t pos = content.find("<span class=\"file_name\">Directory is empty</span>");
 		if (pos != std::string::npos)
-			content.replace(pos, 31, htmlList);
+			content.replace(pos, 51, htmlList);
 		else
 			throw std::runtime_error(ERROR_500_RESPONSE);
 		return (
@@ -418,11 +418,12 @@ std::string method::generateListHrefHtml(std::vector<std::string> allFiles)
 			"	<span class=\"file_name\">directory is empty</span>";
 		return (fullList);
 	}
-	fullList += "<ul>";
+	fullList += "<span class=\"file_name\">Files:</span>";
+	fullList += "<ul class=\"file_list\">";
 	for (std::vector<std::string>::iterator it = allFiles.begin(); it != allFiles.end(); ++it)
 	{
 		fullList +=
-			"<li><a href=\"" + *it + "\">" + *it + "</a></li>";
+			"<li><a href=\"" + *it + "\" class=\"file_link\">" + *it + "</a></li>";
 	}
 	fullList += 
 		"</ul>";
