@@ -11,6 +11,26 @@ std::string method::GET(const std::string& request, int port, Server& server)
 		throw std::runtime_error(ERROR_404_RESPONSE);
 	if (checkPermissions("GET", location) == false)
 		throw std::runtime_error(ERROR_403_RESPONSE);
+
+	if (location->getLocationName() != "/" && location->getLocationName().back() == '/') {
+		if (location->getLocationAutoIndex())
+		{
+			if (path.back() != '/')
+			{
+				size_t pos = path.find_last_of("/");
+				std::string lastPath;
+				if (pos != std::string::npos)
+					lastPath = location->getLocationRoot() + path.substr(pos + 1);
+				else
+					throw std::runtime_error(ERROR_404_RESPONSE);
+				return (method::foundPage(lastPath, port));
+			}
+			return (generateAutoIndexPage(location));
+		}
+		else 
+			throw std::runtime_error(ERROR_404_RESPONSE);
+	}
+
 	std::string locationRoot = location->getLocationRoot();
 	std::string locationIndex = location->getLocationIndex();
 	if (locationRoot.empty() || locationIndex.empty())
