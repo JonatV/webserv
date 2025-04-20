@@ -86,7 +86,9 @@ namespace method
 	
 	std::vector<std::string> listFiles(const char* path);
 	std::string	generateDeletePage();
-	std::string	generateListHtml(std::vector<std::string> allFiles, const std::string& path);
+	std::string	generateAutoIndexPage(const LocationConfig* location);
+	std::string	generateListHrefHtml(std::vector<std::string> allFiles);
+	std::string	generaleListCheckHtml(std::vector<std::string> allFiles, const std::string& path);
 	std::string	handleDeleteRequest(const std::string& request);
 	std::string	deleteTargetFiles(std::vector<std::string>);
 	std::string	trimFileName(std::string);

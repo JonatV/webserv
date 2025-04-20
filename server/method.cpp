@@ -295,7 +295,7 @@ std::string method::generateDeletePage()
 	{
 		std::string content = gnl(file);
 		std::vector<std::string> allFiles = listFiles(UPLOAD_PATH); 
-		std::string htmlList = generateListHtml(allFiles, UPLOAD_PATH);
+		std::string htmlList = generaleListCheckHtml(allFiles, UPLOAD_PATH);
 		size_t pos = content.find("<span>No file yet</span>");
 		if (pos != std::string::npos)
 			content.replace(pos, 24, htmlList);
@@ -311,7 +311,7 @@ std::string method::generateDeletePage()
 		throw std::runtime_error(ERROR_404_RESPONSE);
 }
 
-std::string method::generateListHtml(std::vector<std::string> allFiles, const std::string& path)
+std::string method::generaleListCheckHtml(std::vector<std::string> allFiles, const std::string& path)
 {
 	std::string fullList = "";
 
@@ -351,6 +351,52 @@ std::string method::generateListHtml(std::vector<std::string> allFiles, const st
 	fullList +=
 		"</ul>"
 		"<button type=\"submit\" class=\"bigBtn\">Delete selected files</button>";
+	return (fullList);
+}
+
+
+std::string method::generateAutoIndexPage(const LocationConfig* location)
+{
+	std::ifstream file("./www/autoindex.html");
+	
+	if (file.is_open())
+	{
+		std::string content = gnl(file);
+		std::vector<std::string> allFiles = listFiles(location->getLocationRoot().c_str());
+		std::string htmlList = generateListHrefHtml(allFiles);
+		size_t pos = content.find("<span>Directory is empty</span>");
+		if (pos != std::string::npos)
+			content.replace(pos, 31, htmlList);
+		else
+			throw std::runtime_error(ERROR_500_RESPONSE);
+		return (
+			"HTTP/1.1 200 OK\r\n"
+			"Content-Type: text/html\r\n"
+			"Content-Length: " + to_string(content.length()) + "\r\n"
+			"\r\n" + content);
+	}
+	else
+		throw std::runtime_error(ERROR_404_RESPONSE);
+}
+
+std::string method::generateListHrefHtml(std::vector<std::string> allFiles)
+{
+	std::string fullList = "";
+
+	if (allFiles.empty())
+	{
+		fullList +=
+			"	<span class=\"file_name\">directory is empty</span>";
+		return (fullList);
+	}
+	fullList += "<ul>";
+	for (std::vector<std::string>::iterator it = allFiles.begin(); it != allFiles.end(); ++it)
+	{
+		fullList +=
+			"<li><a href=\"" + *it + "\">" + *it + "</a></li>";
+	}
+	fullList += 
+		"</ul>";
 	return (fullList);
 }
 
