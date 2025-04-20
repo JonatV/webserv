@@ -449,6 +449,8 @@ bool method::checkPermissions(const std::string& type, const LocationConfig* loc
 {
 	if (location == NULL)
 		throw std::runtime_error(ERROR_500_RESPONSE);
+	if (type == "GET" && location->getLocationAutoIndex())
+		return (true);
 	for (const std::string& method : location->getLocationAllowedMethods())
 	{
 		if (method == type)
