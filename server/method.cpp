@@ -5,10 +5,12 @@ std::string method::GET(const std::string& request, int port, Server& server)
 	size_t start = request.find("GET") + 4; // 4 is to go after "GET "
 	size_t end = request.find(" ", start);
 	if (start == std::string::npos || end == std::string::npos) throw std::runtime_error(ERROR_400_RESPONSE);
+
 	std::string path = request.substr(start, end - start);
-	const LocationConfig* location = server.matchLocation(path); // wip return the correct location
+	const LocationConfig* location = server.matchLocation(path);
 	if (!location)
 		throw std::runtime_error(ERROR_404_RESPONSE);
+
 	if (checkPermissions("GET", location) == false)
 		throw std::runtime_error(ERROR_403_RESPONSE);
 
@@ -35,6 +37,7 @@ std::string method::GET(const std::string& request, int port, Server& server)
 	std::string locationIndex = location->getLocationIndex();
 	if (locationRoot.empty() || locationIndex.empty())
 		throw std::runtime_error(ERROR_500_RESPONSE);
+
 	std::string filePath = locationRoot + locationIndex;
 	if (path.find("cgi-bin") != std::string::npos) // todo
 		return (method::handleCGI(path, port));
@@ -56,8 +59,14 @@ std::string method::foundPage(const std::string& filepath, int port)
 		std::string	content = gnl(file);
 		if (filepath.find(".css") != std::string::npos)
 			textType = "css";
-		else
+		else if (filepath.find(".txt") != std::string::npos)
+			textType = "txt";
+		else if (filepath.find(".html") != std::string::npos)
 			textType = "html";
+		else if (filepath.find(".ico") != std::string::npos)
+			textType = "ico";
+		else 
+			throw std::runtime_error(ERROR_400_RESPONSE);
 		return (
 			"HTTP/1.1 200 OK\r\n"
 			"Content-Type: text/" + textType + "\r\n"
@@ -310,11 +319,11 @@ std::vector<std::string> method::listFiles(const char* path)
 std::string method::generateDeletePage()
 {
 	std::ifstream file("./www/delete.html");
-	
+
 	if (file.is_open())
 	{
 		std::string content = gnl(file);
-		std::vector<std::string> allFiles = listFiles(UPLOAD_PATH); 
+		std::vector<std::string> allFiles = listFiles(UPLOAD_PATH);
 		std::string htmlList = generaleListCheckHtml(allFiles, UPLOAD_PATH);
 		size_t pos = content.find("<span>No file yet</span>");
 		if (pos != std::string::npos)
