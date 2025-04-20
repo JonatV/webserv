@@ -3,22 +3,41 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Delete interface</title>
+	<title>Methods interface</title>
 	<link rel="stylesheet" type="text/css" href="/style/style.css">
 </head>
 <body>
 	<header>
 		<div class="flex_column header_delete">
-			<h1>Delete interface</h1>
-			<button id="toHome" onclick="window.location.href='/'">Go to the homepage</button>
+			<h1>Methods interface</h1>
+			<button id="toDashboard" onclick="window.location.href='/dashboard'">Go to the Dashboard</button>
 		</div>
 	</header>
-	<main>
+	<main class="flex_row">
 		<div class="flex_column div_main">
-			<h2>Files on the server</h2>
+			<h2>DELETE</h2>
+			<h2>Delete files available on the server</h2>
 			<form action="/delete" method="post">
 				<span>No file yet</span>
 			</form>
 		</div>
+		<div class="flex_column div_main">
+			<h2>POST</h2>
+			<h2>Upload a file to the server</h2>
+			<div class="form_post">
+				<form class="flex_column" action="" method="post">
+					<textarea class="form_textarea" name="MSG_TEXTAREA" id="msg" placeholder="Enter your message here"></textarea>
+					<button type="submit" class="bigBtn">POST</button>
+				</form>
+			</div>
+		</div>
+		<div class="flex_column div_main">
+			<h2>GET</h2>
+			<h2>Travel to another page</h2>
+			<button class="bigBtn" id="homepage" onclick="window.location.href='/'">Homepage</button>
+			<button class="bigBtn" id="dashboard" onclick="window.location.href='/dashboard'">Dashboard</button>
+			<button class="bigBtn" id="cgi1" onclick="window.location.href='/cgi1'">CGI 1</button>
+			<button class="bigBtn" id="unknown" onclick="window.location.href='/unknown'">Unknown</button>
+	</main>
 </body>
 </html>
