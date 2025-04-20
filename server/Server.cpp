@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/18 16:58:13 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/19 16:33:22 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -243,6 +243,11 @@ const LocationConfig* Server::matchLocation(std::string& path)
 		// exact match
 		if (path == locationPath)
 		{
+			if (locationPath == "/")
+			{
+				std::cout << "\e[32m======= exact match for root '/' \e[0m" << std::endl;
+				return (&it->second);
+			}
 			if (locationPath.back() == '/' && it->second.getLocationAutoIndex() == false)
 			{
 				std::cout << "\e[31m======= autoindex OFF for " << locationPath << "\e[0m" << std::endl;
@@ -262,16 +267,13 @@ const LocationConfig* Server::matchLocation(std::string& path)
 			}
 		}
 	}
-	if (bestMatch->getLocationAutoIndex() == true)
+	if (bestMatch && bestMatch->getLocationAutoIndex())
 	{
 		std::cout << "\e[32m======= best match for " << path << " is " << bestMatch->getLocationRoot() << "\e[0m" << std::endl;
 		return (bestMatch);
 	}
-	else
-	{
-		std::cout << "\e[31m======= autoindex OFF for " << bestMatch->getLocationRoot() << "\e[0m" << std::endl;
-		return (nullptr);
-	}
+	std::cout << "\e[31m======= autoindex OFF for " << bestMatch->getLocationRoot() << "\e[0m" << std::endl;
+	return (nullptr);
 }
 
 int	Server::getClientPort(int fd)
