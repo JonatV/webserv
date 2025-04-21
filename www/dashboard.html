@@ -13,24 +13,15 @@
 			<button id="toHome" onclick="window.location.href='/'">Go to the homepage</button>
 		</div>
 	</header>
-	<main>
-		<div class="flex_column div_main">
+	<main class="main_dashboard">
+		<div class="flex_row div_main">
 			<div class="flex_column">
 				<h2>Methods</h2>
-				<div class="flex_column div_methods">
-					<button class="bigBtn" id="get" onclick="window.location.href='/get'">GET</button>
-					<div class="form_post">
-						<form class="flex_column" action="" method="post">
-							<textarea class="form_textarea" name="MSG_TEXTAREA" id="msg" placeholder="Enter your message here"></textarea>
-							<button type="submit" class="bigBtn">POST</button>
-						</form>
-					</div>
-					<button class="bigBtn" id="delete" onclick="window.location.href='/delete'">DELETE</button>
-				</div>
+				<button class="bigBtn" id="methods" onclick="window.location.href='/methods'">Methods interface</button>
 			</div>
 			<div class="flex_column">
 				<h2>Applications</h2>
-				<div class="flex_row">
+				<div class="flex_row row_center">
 					<button class="bigBtn" id="cgi1" onclick="window.location.href='/cgi1'">CGI 1</button>
 					<button class="bigBtn" id="cgi2" onclick="window.location.href='/cgi2'">CGI 2</button>
 				</div>
