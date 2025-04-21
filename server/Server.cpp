@@ -6,12 +6,13 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/21 14:05:43 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/21 18:29:43 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 #include "WebServer.hpp"
+#include "cookies_session.hpp"
 
 Server::Server(std::vector<int>ports, std::string host, std::string root, std::vector<std::string> serverName, size_t clientBodyLimit, std::map<int, std::string> errorPages, std::map<std::string, LocationConfig> locations, WebServer* webserver)
 : _ports(ports), _host(host), _root(root), _serverName(serverName), _clientBodyLimit(clientBodyLimit), _errorPages(errorPages), _locations(locations), _epollFd(-1), _webServer(webserver), _runningPorts({})
@@ -95,15 +96,19 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 	if (bytesReceived < 0)
 		return (-1);
 	buffer[bytesReceived] = '\0';
+	Client *client = _clients[clientSocketFd];
+	if (client == NULL)
+		throw std::runtime_error(ERROR_500_RESPONSE);
 	try
 	{
-		std::string response = selectMethod(buffer, clientPort);
+		cookies::cookTheCookies(buffer, client);
+		std::string response = selectMethod(buffer, clientPort, client->isRegistered());
 		if (send(clientSocketFd, response.c_str(), response.size(), 0) == -1)
 			return (-1);
 	}
 	catch (const std::runtime_error &e)
 	{
-		std::string errorResponse = method::getErrorHtml(clientPort, e.what(), *this);
+		std::string errorResponse = method::getErrorHtml(clientPort, e.what(), *this, client->isRegistered());
 		if (errorResponse.empty())
 			errorResponse = ERROR_500_RESPONSE;
 		if (send(clientSocketFd, errorResponse.c_str(), errorResponse.size(), 0) == -1)
@@ -115,7 +120,7 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 /// @brief find the method in the request and call the corresponding method
 /// @param buffer header of the request
 /// @return return the response of the method OR an empty string if the method is not allowed
-std::string	Server::selectMethod(char buffer[BUFFER_SIZE], int port)
+std::string	Server::selectMethod(char buffer[BUFFER_SIZE], int port, bool isRegistered)
 {
 	std::string	request(buffer);
 	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mRequest received: \n" << request << "\e[0m" << std::endl; //dev
@@ -124,7 +129,7 @@ std::string	Server::selectMethod(char buffer[BUFFER_SIZE], int port)
 		throw std::runtime_error(ERROR_400_RESPONSE);
 	std::string methodName = request.substr(0, end);
 	if (methodName == "GET")
-		return (method::GET(request, port, *this));
+		return (method::GET(request, port, *this, isRegistered));
 	else if (methodName == "POST")
 		return (method::POST(request, port, *this));
 	else if (methodName == "DELETE")
@@ -327,4 +332,9 @@ std::map<int, std::string> Server::getErrorPages() const
 ssize_t Server::getClientBodyLimit() const
 {
 	return (_clientBodyLimit);
+}
+
+std::map<int, Client *> Server::getClients() const
+{
+	return (_clients);
 }

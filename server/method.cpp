@@ -1,6 +1,6 @@
 #include "method.hpp"
 
-std::string method::GET(const std::string& request, int port, Server& server)
+std::string method::GET(const std::string& request, int port, Server& server, bool isRegistered)
 {
 	size_t start = request.find("GET") + 4; // 4 is to go after "GET "
 	size_t end = request.find(" ", start);
@@ -25,9 +25,9 @@ std::string method::GET(const std::string& request, int port, Server& server)
 					lastPath = location->getLocationRoot() + path.substr(pos + 1);
 				else
 					throw std::runtime_error(ERROR_404_RESPONSE);
-				return (method::foundPage(lastPath, port));
+				return (method::foundPage(lastPath, port, isRegistered));
 			}
-			return (generateAutoIndexPage(location));
+			return (generateAutoIndexPage(location, isRegistered));
 		}
 		else 
 			throw std::runtime_error(ERROR_404_RESPONSE);
@@ -42,12 +42,12 @@ std::string method::GET(const std::string& request, int port, Server& server)
 	if (path.find("cgi-bin") != std::string::npos) // todo
 		return (method::handleCGI(path, port));
 	if (!filePath.empty())
-		return (method::foundPage(filePath, port));
+		return (method::foundPage(filePath, port, isRegistered));
 	else
 		throw std::runtime_error(ERROR_404_RESPONSE);
 }
 
-std::string method::foundPage(const std::string& filepath, int port)
+std::string method::foundPage(const std::string& filepath, int port, bool isRegistered)
 {
 	std::ifstream	file(filepath.c_str());
 	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mGET request for file: " << filepath << "\e[0m" << std::endl; //dev
@@ -55,8 +55,8 @@ std::string method::foundPage(const std::string& filepath, int port)
 	{
 		std::string	textType;
 		if (filepath == "./www/methods.html")
-			return (generateMethodsPage());
-		std::string	content = gnl(file);
+			return (generateMethodsPage(isRegistered));
+		std::string	content = gnl(file, isRegistered);
 		if (filepath.find(".css") != std::string::npos)
 			textType = "css";
 		else if (filepath.find(".txt") != std::string::npos)
@@ -77,7 +77,7 @@ std::string method::foundPage(const std::string& filepath, int port)
 		throw std::runtime_error(ERROR_404_RESPONSE);
 }
 
-std::string method::getErrorHtml(int port, const std::string& errorMessage, Server &server)
+std::string method::getErrorHtml(int port, const std::string& errorMessage, Server &server, bool isRegistered)
 {
 	std::string errorCode;
 	size_t posStart = errorMessage.find(" ");
@@ -99,7 +99,7 @@ std::string method::getErrorHtml(int port, const std::string& errorMessage, Serv
 		std::ifstream file(errorFilePath.c_str());
 		if (file.is_open())
 		{
-			std::string content = gnl(file);
+			std::string content = gnl(file, isRegistered);
 			std::string errorType;
 			size_t posEnd = errorMessage.find("\r\n", posStart);
 			if (posEnd == std::string::npos)
@@ -340,13 +340,13 @@ std::vector<std::string> method::listFiles(const char* path)
 	return (files);
 }
 
-std::string method::generateMethodsPage()
+std::string method::generateMethodsPage(bool isRegistered)
 {
 	std::ifstream file("./www/methods.html");
 
 	if (file.is_open())
 	{
-		std::string content = gnl(file);
+		std::string content = gnl(file, isRegistered);
 		std::vector<std::string> allFiles = listFiles(UPLOAD_PATH);
 		std::string htmlList = generaleListCheckHtml(allFiles, UPLOAD_PATH);
 		size_t pos = content.find("<span>No file yet</span>");
@@ -408,13 +408,13 @@ std::string method::generaleListCheckHtml(std::vector<std::string> allFiles, con
 }
 
 
-std::string method::generateAutoIndexPage(const LocationConfig* location)
+std::string method::generateAutoIndexPage(const LocationConfig* location, bool isRegistered)
 {
 	std::ifstream file("./www/autoindex.html");
 	
 	if (file.is_open())
 	{
-		std::string content = gnl(file);
+		std::string content = gnl(file, isRegistered);
 		std::vector<std::string> allFiles = listFiles(location->getLocationRoot().c_str());
 		std::string htmlList = generateListHrefHtml(allFiles);
 		size_t pos = content.find("<span class=\"file_name_autoindex\">Directory is empty</span>");

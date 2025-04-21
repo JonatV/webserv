@@ -77,16 +77,16 @@ const std::string POST_201_RESPONSE =
 class Server;
 namespace method
 {
-	std::string GET(const std::string& request, int port, Server &server);
+	std::string GET(const std::string& request, int port, Server &server, bool);
 	std::string POST(const std::string &request, int port, Server &server);
 	std::string DELETE(const std::string& request, int port, Server &server);
 	
-	std::string foundPage(const std::string& filePath, int port);
-	std::string getErrorHtml(int port, const std::string& errorMessage, Server &server);
+	std::string foundPage(const std::string& filePath, int port, bool);
+	std::string getErrorHtml(int port, const std::string& errorMessage, Server &server, bool);
 	
 	std::vector<std::string> listFiles(const char* path);
-	std::string	generateMethodsPage();
-	std::string	generateAutoIndexPage(const LocationConfig* location);
+	std::string	generateMethodsPage(bool);
+	std::string	generateAutoIndexPage(const LocationConfig* location, bool);
 	std::string	generateListHrefHtml(std::vector<std::string> allFiles);
 	std::string	generaleListCheckHtml(std::vector<std::string> allFiles, const std::string& path);
 	std::string checkDeleteRequest(int port, const std::string &request, Server &server);

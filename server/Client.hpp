@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/15 10:29:39 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/21 17:56:06 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <iostream>
+#include <map>
 
 class Client
 {
@@ -28,12 +29,18 @@ class Client
 		std::string 		_requestHeader;
 		std::string 		_responseHeader;
 		int					_serverPort;
+		bool				_isRegistered;
+		std::map<std::string, std::string> _cookies;
 	public:
 		Client(int clientSocketFd, struct sockaddr_in clientSocketId, int serverPort);
 		~Client();
 		const char*		getClientIp() const;
 		int				getClientPort() const;
+		bool			isRegistered() const;
+		std::map<std::string, std::string> getCookies() const;
 
+		void			setRegistered(bool registered);
+		void			setCookies(std::map<std::string, std::string> cookies);
 };
 
 #endif

@@ -15,6 +15,6 @@ std::string to_string(const T& value)
 }
 
 // Tiny gnl
-std::string gnl(std::ifstream& file);
+std::string gnl(std::ifstream& file, bool isRegistered);
 
 #endif

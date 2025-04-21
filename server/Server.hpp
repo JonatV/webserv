@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/18 12:15:15 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/21 18:27:59 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,7 +63,7 @@ class Server
 		int					setNonBlocking(int fd);
 		void				initSocketId(struct sockaddr_in &socketId, int port);
 
-		std::string			selectMethod(char buffer[BUFFER_SIZE], int port);
+		std::string			selectMethod(char buffer[BUFFER_SIZE], int port, bool);
 		void				sendErrorAndCloseClient(int clientSocketFd, const std::string &errorResponse, int port);
 		
 		// Prevent Copying
@@ -79,7 +79,7 @@ class Server
 		void						closeClient(struct epoll_event &event, int port);
 		int							treatMethod(struct epoll_event &event, int clientPort);
 		bool						isServerSocket(int fd);
-		const LocationConfig*	matchLocation(std::string& path);
+		const LocationConfig*		matchLocation(std::string& path);
 
 		int							getPort() const;
 		std::vector<int>			getServerSocketFds() const;
@@ -87,6 +87,7 @@ class Server
 		std::vector<int>			getRunningPorts() const;
 		std::map<int, std::string>	getErrorPages() const;
 		ssize_t						getClientBodyLimit() const;
+		std::map<int, Client *>		getClients() const;
 
 		void					setEpollFd(int epollFd);
 };
