@@ -101,7 +101,7 @@ namespace method
 	std::string handleCGI(const std::string& request, int port);
 
 	// helper status code
-	std::string POST_303_RESPONSE(const std::string& location);
+	std::string POST_303_RESPONSE(const std::string& location, bool setCookie = false);
 }
 
 #endif

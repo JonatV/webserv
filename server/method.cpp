@@ -6,6 +6,8 @@ std::string method::GET(const std::string& request, int port, Server& server, bo
 	size_t end = request.find(" ", start);
 	if (start == std::string::npos || end == std::string::npos) throw std::runtime_error(ERROR_400_RESPONSE);
 
+	if (request.find("GET /register") != std::string::npos)
+		return (POST_303_RESPONSE("/index.html", true));
 	std::string path = request.substr(start, end - start);
 	const LocationConfig* location = server.matchLocation(path);
 	if (!location)
@@ -470,7 +472,15 @@ std::string	method::handleCGI(const std::string& request, int port)
 	return (""); // dev: to be implemented
 }
 
-std::string method::POST_303_RESPONSE(const std::string& location) {
+std::string method::POST_303_RESPONSE(const std::string& location, bool setCookie) {
+	if (setCookie)
+		return (
+			"HTTP/1.1 303 See Other\r\n"
+			"Content-Type: text/html\r\n"
+			"Content-Length: 0\r\n"
+			"Set-Cookie: session-id=1234567890;\r\n" // todo set cookie
+			"Location: " + location + "\r\n"
+			"\r\n");
 	return (
 		"HTTP/1.1 303 See Other\r\n"
 		"Content-Type: text/html\r\n"
