@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/19 16:33:22 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/21 14:05:43 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,6 +118,7 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 std::string	Server::selectMethod(char buffer[BUFFER_SIZE], int port)
 {
 	std::string	request(buffer);
+	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mRequest received: \n" << request << "\e[0m" << std::endl; //dev
 	size_t end = request.find(" ");
 	if (end == std::string::npos)
 		throw std::runtime_error(ERROR_400_RESPONSE);
