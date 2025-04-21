@@ -85,10 +85,11 @@ namespace method
 	std::string getErrorHtml(int port, const std::string& errorMessage, Server &server);
 	
 	std::vector<std::string> listFiles(const char* path);
-	std::string	generateDeletePage();
+	std::string	generateMethodsPage();
 	std::string	generateAutoIndexPage(const LocationConfig* location);
 	std::string	generateListHrefHtml(std::vector<std::string> allFiles);
 	std::string	generaleListCheckHtml(std::vector<std::string> allFiles, const std::string& path);
+	std::string checkDeleteRequest(int port, const std::string &request, Server &server);
 	std::string	handleDeleteRequest(const std::string& request);
 	std::string	deleteTargetFiles(std::vector<std::string>);
 	std::string	trimFileName(std::string);

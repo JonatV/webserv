@@ -54,8 +54,8 @@ std::string method::foundPage(const std::string& filepath, int port)
 	if (file.is_open())
 	{
 		std::string	textType;
-		if (filepath == "./www/delete.html")
-			return (generateDeletePage());
+		if (filepath == "./www/methods.html")
+			return (generateMethodsPage());
 		std::string	content = gnl(file);
 		if (filepath.find(".css") != std::string::npos)
 			textType = "css";
@@ -129,18 +129,13 @@ std::string method::POST(const std::string& request, int port, Server &server)
 {
 	size_t start = request.find("POST") + 5;
 	size_t end = request.find(" ", start);
+	if (request.find("POST /delete") != std::string::npos)
+		return (checkDeleteRequest(port, request, server));
 	if (start == std::string::npos || end == std::string::npos) throw std::runtime_error(ERROR_400_RESPONSE);
 	std::string pathName = request.substr(start, end - start);
 	const LocationConfig* location = server.matchLocation(pathName);
 	if (!location)
 		throw std::runtime_error(ERROR_404_RESPONSE);
-	if (request.find("POST /delete") != std::string::npos)
-	{
-		std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST request for delete\e[0m" << std::endl;
-		if (checkPermissions("DELETE", location) == false)
-			throw std::runtime_error(ERROR_403_RESPONSE);
-		return (handleDeleteRequest(request));
-	}
 	if (checkPermissions("POST", location) == false)
 		throw std::runtime_error(ERROR_403_RESPONSE);
 	std::string content = {0};
@@ -155,6 +150,35 @@ std::string method::POST(const std::string& request, int port, Server &server)
 		content = postFromDashboard(request, server);
 	}
 	return (content);
+}
+
+std::string method::checkDeleteRequest(int port, const std::string &request, Server &server)
+{
+	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST request for delete\e[0m" << std::endl;
+	std::string lastPart;
+	size_t refererStart = request.find("Referer: ");
+	size_t refererEnd = request.find("\r\n", refererStart);
+	if (refererStart != std::string::npos && refererEnd != std::string::npos)
+	{
+		refererStart += 9;
+		std::string referer = request.substr(refererStart, refererEnd - refererStart);
+		size_t lastSlash = referer.find_last_of("/");
+		if (lastSlash != std::string::npos)
+			lastPart = referer.substr(lastSlash);
+		else
+			throw std::runtime_error(ERROR_400_RESPONSE);
+	}
+	else
+	{
+		std::cout << "\e[31m[" << port << "]\e[0m\t" << "\e[2mNo referer found in POST request\e[0m" << std::endl;
+		throw std::runtime_error(ERROR_400_RESPONSE);
+	}
+	const LocationConfig *location = server.matchLocation(lastPart);
+	if (!location)
+		throw std::runtime_error(ERROR_404_RESPONSE);
+	if (checkPermissions("DELETE", location) == false)
+		throw std::runtime_error(ERROR_403_RESPONSE);
+	return (handleDeleteRequest(request));
 }
 
 std::string method::postFromTerminal(const std::string &request, Server &server)
@@ -197,7 +221,7 @@ std::string method::postFromDashboard(const std::string &request, Server &server
 	{
 		file << content;
 		file.close();
-		return (POST_303_RESPONSE("/dashboard.html"));
+		return (POST_303_RESPONSE("/methods.html"));
 	}
 	else
 		throw std::runtime_error(ERROR_500_RESPONSE);
@@ -213,7 +237,7 @@ std::string method::postFromDashboard(const std::string &request, Server &server
 std::string method::handleDeleteRequest(const std::string& request)
 {
 	if (request.find("Content-Length: 0") != std::string::npos)
-		return (POST_303_RESPONSE("/delete.html"));
+		return (POST_303_RESPONSE("/methods.html"));
 	if (request.find("=on") == std::string::npos)
 		throw std::runtime_error(ERROR_400_RESPONSE);
 	std::string body = request.substr(request.find("\r\n\r\n") + 4);
@@ -248,7 +272,7 @@ std::string method::deleteTargetFiles(std::vector<std::string>files)
 		if (std::remove(filePath.c_str()) != 0)
 			throw std::runtime_error(ERROR_500_RESPONSE);
 	}
-	return (POST_303_RESPONSE("/delete.html"));
+	return (POST_303_RESPONSE("/methods.html"));
 }
 
 std::string method::trimFileName(std::string str)
@@ -316,9 +340,9 @@ std::vector<std::string> method::listFiles(const char* path)
 	return (files);
 }
 
-std::string method::generateDeletePage()
+std::string method::generateMethodsPage()
 {
-	std::ifstream file("./www/delete.html");
+	std::ifstream file("./www/methods.html");
 
 	if (file.is_open())
 	{
@@ -347,10 +371,10 @@ std::string method::generaleListCheckHtml(std::vector<std::string> allFiles, con
 	if (allFiles.empty())
 	{
 		fullList +=
-			"	<span class=\"file_name\">No files found</span>";
+			"	<span class=\"no_file_method\">No files found</span>";
 		return (fullList);
 	}
-	fullList += "<ul>";
+	fullList += "<ul class = \"to_delete_ul\">";
 	for (std::vector<std::string>::iterator it = allFiles.begin(); it != allFiles.end(); ++it)
 	{
 		std::string		fileContent;
@@ -379,7 +403,7 @@ std::string method::generaleListCheckHtml(std::vector<std::string> allFiles, con
 	}
 	fullList +=
 		"</ul>"
-		"<button type=\"submit\" class=\"bigBtn\">Delete selected files</button>";
+		"<button type=\"submit\" class=\"bigBtn\">Delete</button>";
 	return (fullList);
 }
 
