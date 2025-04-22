@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/18 17:44:54 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/22 15:48:22 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -149,7 +149,6 @@ bool *LocationConfig::getAutoIndex(std::vector<std::string> tokens) {
 			} else {
 				throw ConfigException(ERROR_INVALID_AUTOINDEX);
 			}
-			
 			break;
 		}
 	}
