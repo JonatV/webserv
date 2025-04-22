@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Wish you luck</title>
+	<link rel="stylesheet" type="text/css" href="/style/style.css">
+</head>
+<body>
+	<main class="main_hack flex_column column_center">
+		<h1>You have been hacked trying to hack us (noob)</h1>
+		<div class="info flex_column column_center">
+			<img class="img_hack" src="https://cdn.intra.42.fr/users/d3a7ccedc76389e1859d7ddc54968fb1/eschmitz.jpg" alt="">
+			<p>Name: <span id="personName">Eduardo Schmitz</span></p>
+			<p>Wallet Balance: <span id="walletBalance">128 ₳</span></p>
+		</div>
+		<p class="msg_hack">If you don't want trouble and keep your wallets, it's easy. You can just give us a <span>star</span></p>
+		<div class="flex_row">
+			<button class="bigBtn star" id="btnStar">I give you a star</button>
+			<button class="bigBtn" id="btnNo">hmm no, I lose my wallet</button>
+		</div>
+	</main>
+</body>
+<script>
+	let btnStar = document.getElementById("btnStar");
+	let btnNo = document.getElementById("btnNo");
+	let picture = document.querySelector(".img_hack");
+	let scale = 1;
+	let scaleNo = 1;
+	let contrast = 200;
+	
+	btnNo.addEventListener("click", function() {
+		scale += 0.1;
+		scaleNo -= 0.2;
+		contrast += 90;
+		picture.style.filter = "grayscale(100%) drop-shadow(10px 10px 100px #df454e) contrast(" + contrast + "%)";
+		btnStar.style.transform = "scale(" + scale + ")";
+		btnNo.style.transform = "scale(" + scaleNo + ")";
+	});
+	btnStar.addEventListener("click", function() {
+		picture.classList.remove("img_hack");
+		picture.classList.add("heart");
+		btnStar.classList.add("star_clicked");
+		picture.style.filter = "saturate(420%) hue-rotate(280deg)";
+	});
+</script>
+</html>
