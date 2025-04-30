@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:17 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/18 12:15:55 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/30 17:14:42 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -219,7 +219,7 @@ std::map<std::string, LocationConfig> *ServerConfig::getLocationConfig(std::vect
 	std::string path = tokens[i + 1];
 	i += 1; // Skip "location"
 
-	LocationConfig locationConfig;
+	LocationConfig locationConfig(_root);
 
 	locationConfig._locationName = tokens[i];
 	i += 1; // Skip the path put as _locationName

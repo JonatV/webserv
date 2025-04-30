@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:12 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/18 17:44:14 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/04/30 17:17:14 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,9 +33,9 @@ class LocationConfig {
 		std::string	*getAllowedMethods(std::vector<std::string> tokens);
 		std::string *getRoot(std::vector<std::string> tokens, size_t i);
 		bool		*getAutoIndex(std::vector<std::string> tokens);
-
 	public:
 		LocationConfig();
+		LocationConfig(std::string);
 		~LocationConfig();
 
 		// Getters
