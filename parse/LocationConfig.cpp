@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/06/04 14:50:34 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/06/04 15:23:09 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,10 @@
 
 LocationConfig::LocationConfig() : _locationRoot("./www/"), _autoindex(false) {
     // Initialize with default values
+}
+
+LocationConfig::LocationConfig(std::string root) : _locationRoot(root), _autoindex(false) {
+    // Initialize with root values
 }
 
 LocationConfig::~LocationConfig() {

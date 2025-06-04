@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:12 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/06/04 14:43:27 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/06/04 15:23:25 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,7 @@ class LocationConfig {
 
 	public:
 		LocationConfig();
+		LocationConfig(std::string);
 		~LocationConfig();
 
 		// Getters
