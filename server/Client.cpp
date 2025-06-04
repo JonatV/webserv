@@ -6,14 +6,14 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:12:55 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/21 17:56:30 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/06/04 14:06:39 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
 
 Client::Client(int clientSocketFd, struct sockaddr_in clientSocketId, int serverPort)
-	: _clientSocketFd(clientSocketFd), _clientSocketId(clientSocketId), _serverPort(serverPort), _isRegistered(false), _cookies({})
+	: _clientSocketFd(clientSocketFd), _clientSocketId(clientSocketId), _serverPort(serverPort), _isRegistered(false), _cookies()
 {
 	std::cout << "\e[34m[" << _serverPort << "]\e[0m\t" << "\e[2mCreating Client object\e[0m" << std::endl;
 	inet_ntop(AF_INET, &_clientSocketId.sin_addr, _clientIp, INET_ADDRSTRLEN);

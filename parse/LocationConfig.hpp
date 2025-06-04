@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:12 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/18 17:44:14 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/06/04 14:43:27 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,12 +27,14 @@ class LocationConfig {
 		std::vector<std::string>	_allowedMethods;
 		std::string					_locationRoot;
 		bool						_autoindex;
+		std::string					_cgiPath;
 
 		// Functions to parse location
 		std::string *getIndex(std::vector<std::string> tokens, size_t i, const std::string& rootPath);
 		std::string	*getAllowedMethods(std::vector<std::string> tokens);
 		std::string *getRoot(std::vector<std::string> tokens, size_t i);
 		bool		*getAutoIndex(std::vector<std::string> tokens);
+		std::string *getCgiPath(std::vector<std::string> tokens, size_t i);
 
 	public:
 		LocationConfig();
@@ -44,6 +46,7 @@ class LocationConfig {
 		std::string					getLocationIndex() const;
 		std::vector<std::string>	getLocationAllowedMethods() const;
 		bool						getLocationAutoIndex() const;
+		std::string					getLocationCgiPath() const;
 
 		friend class ServerConfig;
 		friend class Config;

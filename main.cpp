@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/02 02:47:49 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/14 15:12:54 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/06/04 13:58:30 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,9 +18,9 @@
 #include <stdlib.h>
 #include <vector>
 
-std::vector<std::vector<int>> parsePorts(int ac, char *av[])
+std::vector<std::vector<int> > parsePorts(int ac, char *av[])
 {
-	std::vector<std::vector<int>> ports;
+	std::vector<std::vector<int> > ports;
 
 	for (int i = 1; i < ac; i++)
 	{

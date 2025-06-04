@@ -16,10 +16,21 @@ std::string method::GET(const std::string& request, int port, Server& server, bo
 	if (checkPermissions("GET", location) == false)
 		throw std::runtime_error(ERROR_403_RESPONSE);
 
-	if (location->getLocationName() != "/" && location->getLocationName().back() == '/') {
+	// check cgi path
+	if (!location->getLocationCgiPath().empty())
+	{
+		std::string cgiPath = location->getLocationCgiPath();
+		std::string cgiFilePath = location->getLocationRoot() + cgiPath;
+		if (cgiFilePath.empty())
+			throw std::runtime_error(ERROR_500_RESPONSE);
+		return (handleCGI(cgiFilePath, port));
+	}
+	
+	std::string locationName = location->getLocationName();
+	if (locationName != "/" && locationName[locationName.length() - 1] == '/') {
 		if (location->getLocationAutoIndex())
 		{
-			if (path.back() != '/')
+			if (path[path.length() - 1] != '/')
 			{
 				size_t pos = path.find_last_of("/");
 				std::string lastPath;
@@ -34,15 +45,11 @@ std::string method::GET(const std::string& request, int port, Server& server, bo
 		else 
 			throw std::runtime_error(ERROR_404_RESPONSE);
 	}
-
 	std::string locationRoot = location->getLocationRoot();
 	std::string locationIndex = location->getLocationIndex();
 	if (locationRoot.empty() || locationIndex.empty())
 		throw std::runtime_error(ERROR_500_RESPONSE);
-
 	std::string filePath = locationRoot + locationIndex;
-	if (path.find("cgi-bin") != std::string::npos) // todo
-		return (method::handleCGI(path, port));
 	if (!filePath.empty())
 		return (method::foundPage(filePath, port, isRegistered));
 	else
@@ -140,7 +147,7 @@ std::string method::POST(const std::string& request, int port, Server &server)
 		throw std::runtime_error(ERROR_404_RESPONSE);
 	if (checkPermissions("POST", location) == false)
 		throw std::runtime_error(ERROR_403_RESPONSE);
-	std::string content = {0};
+	std::string content = "";
 	if (request.find("User-Agent: curl") != std::string::npos) // POST from terminal
 	{
 		std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST request from terminal\e[0m" << std::endl;
@@ -456,22 +463,6 @@ std::string method::generateListHrefHtml(std::vector<std::string> allFiles)
 	return (fullList);
 }
 
-std::string	method::handleCGI(const std::string& request, int port)
-{
-	(void)port; // dev
-	std::string cgiPath;
-	if (request.find(CGI1) != std::string::npos)
-		cgiPath = "./www/cgi-bin/" + std::string(CGI1);
-	else if (request.find(CGI2) != std::string::npos)
-		cgiPath = "./www/cgi-bin/" + std::string(CGI2);
-	else
-		throw std::runtime_error(ERROR_404_RESPONSE);
-	int pipeFd[2];
-	if (pipe(pipeFd) == -1)
-		throw std::runtime_error(ERROR_500_RESPONSE);
-	return (""); // dev: to be implemented
-}
-
 std::string method::POST_303_RESPONSE(const std::string& location, bool setCookie) {
 	if (setCookie)
 		return (
@@ -495,10 +486,85 @@ bool method::checkPermissions(const std::string& type, const LocationConfig* loc
 		throw std::runtime_error(ERROR_500_RESPONSE);
 	if (type == "GET" && location->getLocationAutoIndex())
 		return (true);
-	for (const std::string& method : location->getLocationAllowedMethods())
+	std::vector<std::string> allowedMethods = location->getLocationAllowedMethods();
+	if (allowedMethods.empty())
+		throw std::runtime_error(ERROR_500_RESPONSE);
+	for (std::vector<std::string>::const_iterator it = allowedMethods.begin(); it != allowedMethods.end(); ++it)
 	{
-		if (method == type)
+		if (*it == type)
 			return (true);
 	}
 	return (false);
+}
+// - cgi // wip
+// - I dont see a POST cgi handler, only get method seems to be handled, what if the user wants to send data to the cgi script?
+std::string method::handleCGI(const std::string& cgiFilePath, int port) {
+	(void)port; // todo check if port is needed for CGI handling 
+	// Check if the CGI script exists and is executable
+	struct stat statbuf;
+	if (stat(cgiFilePath.c_str(), &statbuf) != 0 || !(statbuf.st_mode & S_IXUSR)) {
+		throw std::runtime_error(ERROR_404_RESPONSE);
+	}
+
+	// Create pipes
+	int stdinPipe[2], stdoutPipe[2];
+	if (pipe(stdinPipe) == -1 || pipe(stdoutPipe) == -1) {
+		throw std::runtime_error(ERROR_500_RESPONSE);
+	}
+
+	pid_t pid = fork();
+	if (pid == -1) {
+		throw std::runtime_error(ERROR_500_RESPONSE);
+	}
+
+	if (pid == 0) { // Child process
+		// Redirect stdin and stdout
+		dup2(stdinPipe[0], STDIN_FILENO);
+		dup2(stdoutPipe[1], STDOUT_FILENO);
+
+		close(stdinPipe[1]);
+		close(stdinPipe[0]);
+		close(stdoutPipe[1]);
+		close(stdoutPipe[0]);
+
+		// Set up environment variables
+		setenv("REQUEST_METHOD", "GET", 1);
+		setenv("QUERY_STRING", "", 1);
+		setenv("CONTENT_LENGTH", "0", 1);
+		setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
+		setenv("SCRIPT_NAME", cgiFilePath.c_str(), 1);
+
+		// Execute the CGI script
+		execl(cgiFilePath.c_str(), cgiFilePath.c_str(), NULL);
+
+		// If execl fails
+		perror("execl failed");
+		exit(1);
+	} else { // Parent process
+		close(stdinPipe[0]);
+		close(stdoutPipe[1]);
+
+		// Read output from the CGI script
+		char buffer[20000];
+		std::string output;
+		ssize_t bytesRead;
+		while ((bytesRead = read(stdoutPipe[0], buffer, sizeof(buffer))) > 0) {
+			std::cout << bytesRead << "buffer : " << buffer << std::endl;
+			output.append(buffer, bytesRead);
+		}
+		std::cout << "buffer : " << buffer << std::endl;
+		close(stdoutPipe[0]);
+		close(stdinPipe[1]);
+
+		// Wait for the child process to finish
+		int status;
+		waitpid(pid, &status, 0);
+		output = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + to_string(output.size()) + "\r\n\r\n" + output;
+		if (output.empty()) {
+			std::cout << "HERE" << std::endl;
+			throw std::runtime_error(ERROR_500_RESPONSE);
+		}
+		// Return the CGI output
+		return (output);
+	}
 }

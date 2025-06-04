@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/22 15:48:22 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/06/04 14:50:34 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -156,6 +156,43 @@ bool *LocationConfig::getAutoIndex(std::vector<std::string> tokens) {
 	return result;
 }
 
+// Parse CGI path from configuration tokens
+std::string *LocationConfig::getCgiPath(std::vector<std::string> tokens, size_t i) {
+	if (i + 1 >= tokens.size()) {
+		throw ConfigException(ERROR_INVALID_CGI_PATH);
+	}
+	i++;
+	std::string cgiPath = tokens[i];
+	if (cgiPath.empty()) {
+		throw ConfigException(ERROR_INVALID_CGI_PATH);
+	}
+	if (i + 1 >= tokens.size() || tokens[i + 1] != ";") {
+		throw ConfigException(ERROR_INVALID_CGI_PATH); // Missing semicolon
+	}
+	// construct full path
+	std::string fullPath = this->getLocationRoot();
+	if (fullPath.empty()) {
+		throw ConfigException(ERROR_INVALID_CGI_PATH);
+	}
+	if (fullPath[fullPath.length() - 1] != '/') {
+		fullPath += "/";
+	}
+	fullPath += cgiPath;
+	// Check if CGI path exists and is executable
+	struct stat file_stat;
+	if (stat(fullPath.c_str(), &file_stat) != 0) {
+		throw ConfigException(ERROR_INVALID_CGI_PATH);
+	}
+	if (!S_ISREG(file_stat.st_mode)) {
+		throw ConfigException(ERROR_INVALID_CGI_PATH);
+	}
+	if (access(fullPath.c_str(), X_OK) != 0) {
+		throw ConfigException(ERROR_INVALID_CGI_PATH);
+	}
+	std::string *result = new std::string(cgiPath);
+	return result;
+}
+
 // getters <3
 std::string LocationConfig::getLocationName() const {
 	return (_locationName);
@@ -171,4 +208,7 @@ std::vector<std::string> LocationConfig::getLocationAllowedMethods() const {
 }
 bool LocationConfig::getLocationAutoIndex() const {
 	return (_autoindex);
+}
+std::string LocationConfig::getLocationCgiPath() const {
+	return (_cgiPath);
 }

@@ -6,7 +6,7 @@
 #    By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/19 16:57:04 by jveirman          #+#    #+#              #
-#    Updated: 2025/04/21 17:58:02 by jveirman         ###   ########.fr        #
+#    Updated: 2025/06/04 13:57:59 by jveirman         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -24,7 +24,7 @@ SRCS = main.cpp \
 NAME = webserv
 CC = c++
 CFLAGS = -Wall -Wextra -Werror
-STD =#-std=c++98
+STD = -std=c++98
 ifdef DEV
 	DEV_FLAGS = -g3 -fsanitize=address
 	# DEV_FLAGS = -Wno-shadow

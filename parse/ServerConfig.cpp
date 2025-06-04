@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:17 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/04/18 12:15:55 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/06/04 14:58:58 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -319,16 +319,14 @@ std::map<std::string, LocationConfig> *ServerConfig::getLocationConfig(std::vect
 			}
 		}
 		else if (tokens[i] == "cgi_path") {
-			// Parse CGI path
-			if (i + 1 >= tokens.size()) {
-				throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_CGI_PATH);
-			}
-			i += 2; // Skip "cgi_path" and the path
-			// Skip semicolon if present
+			std::string *cgiPathPtr = locationConfig.getCgiPath(tokens, i);
+			locationConfig._cgiPath = *cgiPathPtr;
+			delete cgiPathPtr;
+
+			i += 2; // Skip "cgi_path" and the cgi path value
+			// Skip semicolon
 			if (i < tokens.size() && tokens[i] == ";") {
 				i++;
-			} else {
-				throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_CGI_PATH); // Missing semicolon
 			}
 		}
 		else if (tokens[i] == "upload_path") {

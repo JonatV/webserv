@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/21 18:29:43 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/06/04 14:04:52 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 #include "cookies_session.hpp"
 
 Server::Server(std::vector<int>ports, std::string host, std::string root, std::vector<std::string> serverName, size_t clientBodyLimit, std::map<int, std::string> errorPages, std::map<std::string, LocationConfig> locations, WebServer* webserver)
-: _ports(ports), _host(host), _root(root), _serverName(serverName), _clientBodyLimit(clientBodyLimit), _errorPages(errorPages), _locations(locations), _epollFd(-1), _webServer(webserver), _runningPorts({})
+: _ports(ports), _host(host), _root(root), _serverName(serverName), _clientBodyLimit(clientBodyLimit), _errorPages(errorPages), _locations(locations), _epollFd(-1), _webServer(webserver), _runningPorts()
 {
 	for (size_t i = 0; i < ports.size(); i++)
 	{
@@ -241,7 +241,7 @@ bool Server::isServerSocket(int fd)
 //	
 const LocationConfig* Server::matchLocation(std::string& path)
 {
-	const LocationConfig* bestMatch = nullptr;
+	const LocationConfig* bestMatch = NULL;
 	size_t bestLength = 0;
 	for (std::map<std::string, LocationConfig>::const_iterator it = _locations.begin(); it != _locations.end(); ++it)
 	{
@@ -254,10 +254,10 @@ const LocationConfig* Server::matchLocation(std::string& path)
 				std::cout << "\e[32m======= exact match for root '/' \e[0m" << std::endl;
 				return (&it->second);
 			}
-			if (locationPath.back() == '/' && it->second.getLocationAutoIndex() == false)
+			if (locationPath[locationPath.length() - 1] == '/' && it->second.getLocationAutoIndex() == false)
 			{
 				std::cout << "\e[31m======= autoindex OFF for " << locationPath << "\e[0m" << std::endl;
-				return (nullptr);
+				return (NULL);
 			}
 			std::cout << "\e[32m======= exact match for " << path << " is " << locationPath << "\e[0m" << std::endl;
 			return (&it->second);
@@ -279,7 +279,7 @@ const LocationConfig* Server::matchLocation(std::string& path)
 		return (bestMatch);
 	}
 	std::cout << "\e[31m======= autoindex OFF for " << bestMatch->getLocationRoot() << "\e[0m" << std::endl;
-	return (nullptr);
+	return (NULL);
 }
 
 int	Server::getClientPort(int fd)

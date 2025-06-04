@@ -13,6 +13,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <algorithm>
+#include <sys/wait.h>
 
 #define CGI1 "test.cgi"
 #define CGI2 "myscript.cgi"
