@@ -39,7 +39,7 @@ bool	cookies::parseCookieHeader(std::string request, Client *client)
 	while ((end = cookieHeader.find(";", start)) != std::string::npos)
 	{
 		std::string cookie = cookieHeader.substr(start, end - start);
-		size_t equalPos = cookie.find("=");
+		size_t equalPos = cookie.find("="); 
 		if (equalPos != std::string::npos)
 		{
 			cookieName = cookie.substr(0, equalPos);
@@ -84,4 +84,13 @@ bool cookies::checkCookies(std::map<std::string, std::string> cookies)
 	if (cookies["session-id"].find_first_not_of("0123456789") != std::string::npos)
 		return (false);
 	return (true);
+}
+
+std::string cookies::generateCookieId()
+{
+	// generate a random cookie id of 10 digits
+	std::string cookieId;
+	for (int i = 0; i < 10; ++i)
+		cookieId += '0' + (rand() % 10);
+	return (cookieId);
 }

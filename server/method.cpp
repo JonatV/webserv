@@ -1,3 +1,4 @@
+#include "cookies_session.hpp"
 #include "method.hpp"
 
 std::string method::GET(const std::string& request, int port, Server& server, bool isRegistered)
@@ -465,13 +466,18 @@ std::string method::generateListHrefHtml(std::vector<std::string> allFiles)
 
 std::string method::POST_303_RESPONSE(const std::string& location, bool setCookie) {
 	if (setCookie)
+	{
+		// create a cookie string
+		std::string cookieId = cookies::generateCookieId();
+		std::cout << "\033[31m" << "========= cookies id: " << cookieId << "\033[0m" << std::endl;
 		return (
 			"HTTP/1.1 303 See Other\r\n"
 			"Content-Type: text/html\r\n"
 			"Content-Length: 0\r\n"
-			"Set-Cookie: session-id=1234567890;\r\n" // todo set cookie
+			"Set-Cookie: session-id="+ to_string(cookieId) + ";\r\n"
 			"Location: " + location + "\r\n"
 			"\r\n");
+	}
 	return (
 		"HTTP/1.1 303 See Other\r\n"
 		"Content-Type: text/html\r\n"

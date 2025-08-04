@@ -9,9 +9,10 @@
 
 namespace cookies
 {
-	void cookTheCookies(char buffer[], Client *client);
-	bool parseCookieHeader(std::string request, Client *client);
-	bool checkCookies(std::map<std::string, std::string> cookies);
+	void		cookTheCookies(char buffer[], Client *client);
+	bool		parseCookieHeader(std::string request, Client *client);
+	bool		checkCookies(std::map<std::string, std::string> cookies);
+	std::string	generateCookieId();
 }
 
 #endif
