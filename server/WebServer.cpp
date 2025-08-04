@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServer.cpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 15:55:05 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/14 15:12:34 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/08/04 15:41:16 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,7 @@ void WebServer::start()
 		CERR_MSG("____", "Failed to create epoll fd");
 		return;
 	}
+	// Initialize each server and add its sockets to the epoll instance
 	for ( size_t i = 0; i < _servers.size(); i++ )
 	{
 		_servers[i]->setEpollFd(sharedEpollFd);
@@ -87,6 +88,11 @@ void WebServer::start()
 		return;
 	}
 	// accept incoming connections continuously. This is the main loop of the webserver
+	evenLoop(sharedEpollFd);
+}
+
+void WebServer::evenLoop(int sharedEpollFd)
+{
 	struct epoll_event events[MAX_QUEUE];
 	try {
 		while (true)

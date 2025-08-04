@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/06/04 14:04:52 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/08/04 16:14:11 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -123,7 +123,7 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 std::string	Server::selectMethod(char buffer[BUFFER_SIZE], int port, bool isRegistered)
 {
 	std::string	request(buffer);
-	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mRequest received: \n" << request << "\e[0m" << std::endl; //dev
+	// std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mRequest received: \n" << request << "\e[0m" << std::endl; //dev
 	size_t end = request.find(" ");
 	if (end == std::string::npos)
 		throw std::runtime_error(ERROR_400_RESPONSE);
@@ -140,7 +140,7 @@ std::string	Server::selectMethod(char buffer[BUFFER_SIZE], int port, bool isRegi
 
 void Server::acceptClient(int serverSocketFd)
 {
-	struct sockaddr_in clientSocketId;
+	struct sockaddr_in	clientSocketId;
 	socklen_t clientSocketLength = sizeof(clientSocketId);
 	int port = _socketFdToPort[serverSocketFd];
 	// accept the connection
@@ -166,7 +166,7 @@ void Server::acceptClient(int serverSocketFd)
 	}
 	// add the client socket to epoll
 	struct epoll_event newEventClient;
-	newEventClient.events = EPOLLIN | EPOLLET; // edge triggered (enable the possibility to handls partial data)
+	newEventClient.events = EPOLLIN | EPOLLET; // edge triggered (enable the possibility to handle partial data)
 	newEventClient.data.fd = clientSocketFd;
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientSocketFd, &newEventClient) == -1)
 	{
@@ -251,7 +251,7 @@ const LocationConfig* Server::matchLocation(std::string& path)
 		{
 			if (locationPath == "/")
 			{
-				std::cout << "\e[32m======= exact match for root '/' \e[0m" << std::endl;
+				// std::cout << "\e[32m======= exact match for root '/' \e[0m" << std::endl; //dev
 				return (&it->second);
 			}
 			if (locationPath[locationPath.length() - 1] == '/' && it->second.getLocationAutoIndex() == false)
@@ -259,7 +259,7 @@ const LocationConfig* Server::matchLocation(std::string& path)
 				std::cout << "\e[31m======= autoindex OFF for " << locationPath << "\e[0m" << std::endl;
 				return (NULL);
 			}
-			std::cout << "\e[32m======= exact match for " << path << " is " << locationPath << "\e[0m" << std::endl;
+			// std::cout << "\e[32m======= exact match for " << path << " is " << locationPath << "\e[0m" << std::endl; //dev
 			return (&it->second);
 		}
 		// prefix match
@@ -269,7 +269,7 @@ const LocationConfig* Server::matchLocation(std::string& path)
 			{
 				bestLength = locationPath.length();
 				bestMatch = &it->second;
-				std::cout << "======= current best match for " << path << " is " << locationPath << std::endl;
+				// std::cout << "======= current best match for " << path << " is " << locationPath << std::endl; // dev
 			}
 		}
 	}

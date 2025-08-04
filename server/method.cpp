@@ -59,7 +59,8 @@ std::string method::GET(const std::string& request, int port, Server& server, bo
 std::string method::foundPage(const std::string& filepath, int port, bool isRegistered)
 {
 	std::ifstream	file(filepath.c_str());
-	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mGET request for file: " << filepath << "\e[0m" << std::endl; //dev
+	(void)port; // dev
+	// std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mGET request for file: " << filepath << "\e[0m" << std::endl; //dev
 	if (file.is_open())
 	{
 		std::string	textType;
@@ -293,7 +294,6 @@ std::string method::trimFileName(std::string str)
 	return (str.substr(start, end - start));
 }
 
-
 std::string method::DELETE(const std::string& request, int port, Server &server)
 {
 	std::string filePath;
@@ -496,6 +496,7 @@ bool method::checkPermissions(const std::string& type, const LocationConfig* loc
 	}
 	return (false);
 }
+
 // - cgi // wip
 // - I dont see a POST cgi handler, only get method seems to be handled, what if the user wants to send data to the cgi script?
 std::string method::handleCGI(const std::string& cgiFilePath, int port) {

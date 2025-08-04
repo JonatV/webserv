@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   WebServer.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/14 15:00:01 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/08/04 13:15:18 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,11 +40,12 @@ class WebServer
 		WebServer(Config &);
 		~WebServer();
 		void start();
-		
+
+		void initServers(Config &config);
+		void evenLoop(int sharedEpollFd);
 		void registerClientFd(int fd, Server* server);
 		void unregisterClientFd(int fd);
-		void initServers(Config &config);
-	
+		
 		// error handling
 		class err_404 : public std::exception
 		{
