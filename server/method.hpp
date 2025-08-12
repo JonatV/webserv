@@ -14,9 +14,13 @@
 #include <unistd.h>
 #include <algorithm>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <sys/select.h>
+#include <map>
+#include <cctype>
 
-#define CGI1 "test.cgi"
-#define CGI2 "myscript.cgi"
+#define CGI1 "apps.cgi"
+#define CGI2 "star_wars.cgi"
 #define CERR_MSG(port, msg) std::cerr << "\e[31m[" + to_string(port) + "]\e[0m\t" + "\e[2m" + msg + "\e[0m" << std::endl
 
 const std::string DELETE_200_RESPONSE =
@@ -99,7 +103,10 @@ namespace method
 	bool		checkPermissions(const std::string& type, const LocationConfig* location);
 	
 	// CGI
-	std::string handleCGI(const std::string& request, int port);
+	std::string handleCGI(const std::string& request, const std::string& cgiFilePath, int port);
+	std::string parseCGIResponse(const std::string& cgiOutput);
+	bool 		isCGIScript(const std::string& filePath);
+	std::string handleFileUpload(const std::string& request, Server& server, int port);
 
 	// helper status code
 	std::string POST_303_RESPONSE(const std::string& location, bool setCookie = false);

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
+/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/06/04 15:23:09 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/08/12 17:28:03 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,8 @@ LocationConfig::~LocationConfig() {
 }
 
 // Parse index file from configuration tokens
+// Dans LocationConfig.cpp, remplace la fonction getIndex par :
+
 std::string *LocationConfig::getIndex(std::vector<std::string> tokens, size_t i, const std::string& rootPath) {
 	// Check if we have enough tokens
 	if (i + 1 >= tokens.size()) {
@@ -37,13 +39,23 @@ std::string *LocationConfig::getIndex(std::vector<std::string> tokens, size_t i,
 	if (indexName.empty()) {
 		throw ConfigException(ERROR_INVALID_INDEX_FILES);
 	}
-	// Check for HTML extension
-	if (indexName.length() < 5 || (indexName.substr(indexName.length() - 5) != ".html" 
-		&& indexName.substr(indexName.length() - 4) != ".css"
-		&& indexName.substr(indexName.length() - 4) != ".ico"
-		&& indexName.substr(indexName.length() - 4) != ".txt")) {
+	
+	// Check for valid extensions (ajout des extensions CGI)
+	bool validExtension = false;
+	if (indexName.length() >= 5 && indexName.substr(indexName.length() - 5) == ".html") validExtension = true;
+	if (indexName.length() >= 4 && indexName.substr(indexName.length() - 4) == ".css") validExtension = true;
+	if (indexName.length() >= 4 && indexName.substr(indexName.length() - 4) == ".ico") validExtension = true;
+	if (indexName.length() >= 4 && indexName.substr(indexName.length() - 4) == ".txt") validExtension = true;
+	// *** AJOUT DES EXTENSIONS CGI ***
+	if (indexName.length() >= 3 && indexName.substr(indexName.length() - 3) == ".py") validExtension = true;
+	if (indexName.length() >= 3 && indexName.substr(indexName.length() - 3) == ".sh") validExtension = true;
+	if (indexName.length() >= 3 && indexName.substr(indexName.length() - 3) == ".pl") validExtension = true;
+	if (indexName.length() >= 4 && indexName.substr(indexName.length() - 4) == ".cgi") validExtension = true;
+	
+	if (!validExtension) {
 		throw ConfigException(ERROR_INVALID_INDEX_FORMAT);
 	}
+	
 	// Check for semicolon
 	if (i + 1 >= tokens.size() || tokens[i + 1] != ";") {
 		throw ConfigException(ERROR_INVALID_INDEX_FILES); // Missing semicolon

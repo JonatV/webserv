@@ -5,30 +5,31 @@ std::string method::GET(const std::string& request, int port, Server& server, bo
 {
 	size_t start = request.find("GET") + 4; // 4 is to go after "GET "
 	size_t end = request.find(" ", start);
-	if (start == std::string::npos || end == std::string::npos) throw std::runtime_error(ERROR_400_RESPONSE);
+	if (start == std::string::npos || end == std::string::npos) 
+		throw std::runtime_error(ERROR_400_RESPONSE);
 
+	// Cas spécial : register
 	if (request.find("GET /register") != std::string::npos)
 		return (POST_303_RESPONSE("/index.html", true));
+
+	// Extraire le path
 	std::string path = request.substr(start, end - start);
 	const LocationConfig* location = server.matchLocation(path);
 	if (!location)
 		throw std::runtime_error(ERROR_404_RESPONSE);
 
+	// Vérifier les permissions
 	if (checkPermissions("GET", location) == false)
 		throw std::runtime_error(ERROR_403_RESPONSE);
 
-	// check cgi path
-	if (!location->getLocationCgiPath().empty())
-	{
-		std::string cgiPath = location->getLocationCgiPath();
-		std::string cgiFilePath = location->getLocationRoot() + cgiPath;
-		if (cgiFilePath.empty())
-			throw std::runtime_error(ERROR_500_RESPONSE);
-		return (handleCGI(cgiFilePath, port));
-	}
-	
+	// Obtenir les informations de la location
 	std::string locationName = location->getLocationName();
-	if (locationName != "/" && locationName[locationName.length() - 1] == '/') {
+	std::string locationRoot = location->getLocationRoot();
+	std::string locationIndex = location->getLocationIndex();
+
+	// Vérifier si c'est un répertoire avec autoindex
+	if (locationName != "/" && locationName[locationName.length() - 1] == '/') 
+	{
 		if (location->getLocationAutoIndex())
 		{
 			if (path[path.length() - 1] != '/')
@@ -36,7 +37,7 @@ std::string method::GET(const std::string& request, int port, Server& server, bo
 				size_t pos = path.find_last_of("/");
 				std::string lastPath;
 				if (pos != std::string::npos)
-					lastPath = location->getLocationRoot() + path.substr(pos + 1);
+					lastPath = locationRoot + path.substr(pos + 1);
 				else
 					throw std::runtime_error(ERROR_404_RESPONSE);
 				return (method::foundPage(lastPath, port, isRegistered));
@@ -44,13 +45,25 @@ std::string method::GET(const std::string& request, int port, Server& server, bo
 			return (generateAutoIndexPage(location, isRegistered));
 		}
 		else 
+		{
 			throw std::runtime_error(ERROR_404_RESPONSE);
+		}
 	}
-	std::string locationRoot = location->getLocationRoot();
-	std::string locationIndex = location->getLocationIndex();
+
+	// Construire le chemin du fichier
 	if (locationRoot.empty() || locationIndex.empty())
 		throw std::runtime_error(ERROR_500_RESPONSE);
+	
 	std::string filePath = locationRoot + locationIndex;
+
+	// *** VÉRIFICATION CGI ***
+	if (isCGIScript(filePath))
+	{
+		std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mGET CGI request: " << filePath << "\e[0m" << std::endl;
+		return (handleCGI(request, filePath, port));
+	}
+
+	// *** FICHIER STATIQUE ***
 	if (!filePath.empty())
 		return (method::foundPage(filePath, port, isRegistered));
 	else
@@ -138,29 +151,148 @@ std::string method::getErrorHtml(int port, const std::string& errorMessage, Serv
 
 std::string method::POST(const std::string& request, int port, Server &server)
 {
-	size_t start = request.find("POST") + 5;
+	// Parse la ligne de requête POST
+	size_t start = request.find("POST") + 5; // 5 = longueur de "POST "
 	size_t end = request.find(" ", start);
+	
+	if (start == std::string::npos || end == std::string::npos) 
+		throw std::runtime_error(ERROR_400_RESPONSE);
+	
+	std::string pathName = request.substr(start, end - start);
+	
+	// Cas spécial : requête de suppression via POST
 	if (request.find("POST /delete") != std::string::npos)
 		return (checkDeleteRequest(port, request, server));
-	if (start == std::string::npos || end == std::string::npos) throw std::runtime_error(ERROR_400_RESPONSE);
-	std::string pathName = request.substr(start, end - start);
+	
+	// Trouver la location correspondante
 	const LocationConfig* location = server.matchLocation(pathName);
 	if (!location)
 		throw std::runtime_error(ERROR_404_RESPONSE);
+	
+	// Vérifier les permissions POST
 	if (checkPermissions("POST", location) == false)
 		throw std::runtime_error(ERROR_403_RESPONSE);
-	std::string content = "";
-	if (request.find("User-Agent: curl") != std::string::npos) // POST from terminal
+	
+	// Construire le chemin du fichier
+	std::string locationRoot = location->getLocationRoot();
+	std::string locationIndex = location->getLocationIndex();
+	
+	if (locationRoot.empty() || locationIndex.empty())
+		throw std::runtime_error(ERROR_500_RESPONSE);
+	
+	std::string filePath = locationRoot + locationIndex;
+	
+	// *** VÉRIFICATION CGI EN PREMIER ***
+	if (isCGIScript(filePath))
 	{
-		std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST request from terminal\e[0m" << std::endl;
-		content = postFromTerminal(request, server);
+		std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST CGI request: " << filePath << "\e[0m" << std::endl;
+		return (handleCGI(request, filePath, port));
 	}
-	else			// POST from dashboard
+	
+	// *** TRAITEMENT POST CLASSIQUE (upload/form) ***
+	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST request for: " << pathName << "\e[0m" << std::endl;
+	
+	// Vérifier la limite de taille du body
+	std::string contentLengthHeader;
+	size_t contentLengthPos = request.find("Content-Length: ");
+	if (contentLengthPos != std::string::npos)
 	{
-		std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST request\e[0m" << std::endl;
-		content = postFromDashboard(request, server);
+		size_t lineEnd = request.find("\r\n", contentLengthPos);
+		if (lineEnd != std::string::npos)
+		{
+			contentLengthHeader = request.substr(contentLengthPos + 16, lineEnd - contentLengthPos - 16);
+			ssize_t contentLength = std::atoi(contentLengthHeader.c_str());
+			
+			if (contentLength > server.getClientBodyLimit())
+			{
+				std::cout << "\e[31m[" << port << "]\e[0m\t" << "Request body too large: " 
+						  << contentLength << " > " << server.getClientBodyLimit() << std::endl;
+				throw std::runtime_error(ERROR_413_RESPONSE);
+			}
+		}
 	}
-	return (content);
+	
+	// Déterminer le type de requête POST
+	if (request.find("User-Agent: curl") != std::string::npos)
+	{
+		// POST depuis terminal/curl
+		return (postFromTerminal(request, server));
+	}
+	else if (request.find("Content-Type: multipart/form-data") != std::string::npos)
+	{
+		// Upload de fichier
+		return (handleFileUpload(request, server, port));
+	}
+	else if (request.find("Content-Type: application/x-www-form-urlencoded") != std::string::npos)
+	{
+		// Formulaire HTML standard
+		return (postFromDashboard(request, server));
+	}
+	else
+	{
+		// Fallback : traiter comme formulaire simple
+		std::cout << "\e[33m[" << port << "]\e[0m\t" << "Unknown POST content type, treating as form" << std::endl;
+		return (postFromDashboard(request, server));
+	}
+}
+
+// Fonction helper pour gérer l'upload de fichiers
+std::string method::handleFileUpload(const std::string& request, Server& server, int port)
+{
+	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mFile upload request\e[0m" << std::endl;
+	
+	// Extraire le boundary du Content-Type
+	std::string boundary;
+	size_t boundaryPos = request.find("boundary=");
+	if (boundaryPos != std::string::npos)
+	{
+		size_t lineEnd = request.find("\r\n", boundaryPos);
+		boundary = request.substr(boundaryPos + 9, lineEnd - boundaryPos - 9);
+	}
+	
+	if (boundary.empty())
+	{
+		std::cout << "\e[31m[" << port << "]\e[0m\t" << "No boundary found in multipart request" << std::endl;
+		throw std::runtime_error(ERROR_400_RESPONSE);
+	}
+	
+	// Pour une implémentation complète de multipart/form-data, il faudrait parser
+	// chaque partie séparément. Ici on fait une version simplifiée.
+	
+	// Extraire le body
+	size_t bodyStart = request.find("\r\n\r\n");
+	if (bodyStart == std::string::npos)
+		throw std::runtime_error(ERROR_400_RESPONSE);
+	
+	std::string body = request.substr(bodyStart + 4);
+	
+	// Vérifier la taille
+	if ((ssize_t)body.length() > server.getClientBodyLimit())
+		throw std::runtime_error(ERROR_413_RESPONSE);
+	
+	// Générer un nom de fichier unique
+	std::string fileName = UPLOAD_PATH + to_string(time(0)) + "_upload.txt";
+	while (std::ifstream(fileName.c_str()))
+		fileName = UPLOAD_PATH + to_string(time(0)) + "_upload.txt";
+	
+	// Sauvegarder (version simplifiée - dans un vrai serveur, il faudrait parser le multipart)
+	std::ofstream file(fileName.c_str());
+	if (file.is_open())
+	{
+		file << "=== File uploaded via multipart/form-data ===" << std::endl;
+		file << "Boundary: " << boundary << std::endl;
+		file << "Content length: " << body.length() << std::endl;
+		file << "=== Raw content ===" << std::endl;
+		file << body;
+		file.close();
+		
+		std::cout << "\e[32m[" << port << "]\e[0m\t" << "File uploaded: " << fileName << std::endl;
+		return (POST_201_RESPONSE);
+	}
+	else
+	{
+		throw std::runtime_error(ERROR_500_RESPONSE);
+	}
 }
 
 std::string method::checkDeleteRequest(int port, const std::string &request, Server &server)
@@ -197,18 +329,41 @@ std::string method::postFromTerminal(const std::string &request, Server &server)
 	std::string body = request.substr(request.find("\r\n\r\n") + 4);
 	if (body.empty())
 		throw std::runtime_error(ERROR_400_RESPONSE);
+
 	ssize_t bytesReceived = body.length();
 	if (bytesReceived > server.getClientBodyLimit())
 		throw std::runtime_error(ERROR_413_RESPONSE);
-	std::string fileName = UPLOAD_PATH + to_string(time(0)) + ".txt";
+
+	// Déterminer l'extension selon le Content-Type
+	std::string extension = ".txt";
+	if (request.find("Content-Type: application/json") != std::string::npos)
+		extension = ".json";
+	else if (request.find("Content-Type: text/html") != std::string::npos)
+		extension = ".html";
+	else if (request.find("Content-Type: text/xml") != std::string::npos)
+		extension = ".xml";
+
+	std::string fileName = UPLOAD_PATH + to_string(time(0)) + extension;
 	while (std::ifstream(fileName.c_str()))
-		fileName = UPLOAD_PATH + to_string(time(0)) + ".txt";
+		fileName = UPLOAD_PATH + to_string(time(0)) + extension;
+
 	std::ofstream file(fileName.c_str());
 	if (file.is_open())
 	{
 		file << body;
 		file.close();
-		return (POST_201_RESPONSE);
+		
+		// Réponse avec plus d'informations
+		std::string response = 
+			"HTTP/1.1 201 Created\r\n"
+			"Content-Type: application/json\r\n"
+			"Content-Length: ";
+		
+		std::string jsonResponse = "{\"status\":\"success\",\"message\":\"File created\",\"filename\":\"" 
+								 + fileName + "\",\"size\":" + to_string(bytesReceived) + "}";
+		
+		response += to_string(jsonResponse.length()) + "\r\n\r\n" + jsonResponse;
+		return response;
 	}
 	else
 		throw std::runtime_error(ERROR_500_RESPONSE);
@@ -216,17 +371,67 @@ std::string method::postFromTerminal(const std::string &request, Server &server)
 
 std::string method::postFromDashboard(const std::string &request, Server &server)
 {
-	std::string content = "";
 	if (request.find("User-Agent: curl") != std::string::npos)
-		return (content);
-	size_t start = request.find("MSG_TEXTAREA=");
-	content = request.substr(start + std::string("MSG_TEXTAREA=").length());
+		return postFromTerminal(request, server);
+
+	// Extraire le body
+	std::string body = request.substr(request.find("\r\n\r\n") + 4);
+	std::string content = "";
+	
+	// Parser les données de formulaire
+	size_t msgStart = body.find("MSG_TEXTAREA=");
+	if (msgStart != std::string::npos)
+	{
+		content = body.substr(msgStart + std::string("MSG_TEXTAREA=").length());
+		
+		// Décoder URL encoding basique
+		size_t plusPos = 0;
+		while ((plusPos = content.find("+", plusPos)) != std::string::npos)
+		{
+			content.replace(plusPos, 1, " ");
+			plusPos++;
+		}
+		
+		// Gérer %20, %0A, etc. (version simplifiée)
+		size_t percentPos = 0;
+		while ((percentPos = content.find("%", percentPos)) != std::string::npos)
+		{
+			if (percentPos + 2 < content.length())
+			{
+				if (content.substr(percentPos, 3) == "%0A")
+					content.replace(percentPos, 3, "\n");
+				else if (content.substr(percentPos, 3) == "%20")
+					content.replace(percentPos, 3, " ");
+				else if (content.substr(percentPos, 3) == "%0D")
+					content.replace(percentPos, 3, "\r");
+			}
+			percentPos++;
+		}
+	}
+	else
+	{
+		content = body; // Fallback
+	}
+
 	ssize_t bytesReceived = content.length();
 	if (bytesReceived > server.getClientBodyLimit())
 		throw std::runtime_error(ERROR_413_RESPONSE);
+
+	if (content.empty())
+	{
+		// Rediriger vers la page methods avec un message d'erreur
+		return (
+			"HTTP/1.1 303 See Other\r\n"
+			"Content-Type: text/html\r\n"
+			"Content-Length: 0\r\n"
+			"Location: /methods.html?error=empty\r\n"
+			"\r\n");
+	}
+
 	std::string fileName = UPLOAD_PATH + to_string(time(0)) + ".txt";
-	while (std::ifstream(fileName.c_str())) // security loop to not have dup filename
+	while (std::ifstream(fileName.c_str()))
 		fileName = UPLOAD_PATH + to_string(time(0)) + ".txt";
+
 	std::ofstream file(fileName.c_str());
 	if (file.is_open())
 	{
@@ -503,75 +708,255 @@ bool method::checkPermissions(const std::string& type, const LocationConfig* loc
 	return (false);
 }
 
-// - cgi // wip
-// - I dont see a POST cgi handler, only get method seems to be handled, what if the user wants to send data to the cgi script?
-std::string method::handleCGI(const std::string& cgiFilePath, int port) {
-	(void)port; // todo check if port is needed for CGI handling 
-	// Check if the CGI script exists and is executable
+std::string method::handleCGI(const std::string& request, const std::string& cgiFilePath, int port) {
+    (void)port; // pour éviter warning unused parameter
+    
+    // Parse la requête HTTP pour extraire les infos
+    std::istringstream requestStream(request);
+    std::string requestLine;
+    std::getline(requestStream, requestLine);
+    
+    // Extraire méthode, path et query string
+    std::istringstream lineStream(requestLine);
+    std::string method, fullPath, protocol;
+    lineStream >> method >> fullPath >> protocol;
+    
+    std::string path, queryString;
+    size_t questionMarkPos = fullPath.find('?');
+    if (questionMarkPos != std::string::npos) {
+        path = fullPath.substr(0, questionMarkPos);
+        queryString = fullPath.substr(questionMarkPos + 1);
+    } else {
+        path = fullPath;
+        queryString = "";
+    }
+    
+    // Parse les headers HTTP
+    std::map<std::string, std::string> headers;
+    std::string headerLine;
+    while (std::getline(requestStream, headerLine) && headerLine != "\r" && headerLine != "") {
+        if (!headerLine.empty() && headerLine[headerLine.length() - 1] == '\r') 
+            headerLine.erase(headerLine.length() - 1);
+        
+        size_t colonPos = headerLine.find(':');
+        if (colonPos != std::string::npos) {
+            std::string headerName = headerLine.substr(0, colonPos);
+            std::string headerValue = headerLine.substr(colonPos + 2); // +2 pour ": "
+            headers[headerName] = headerValue;
+        }
+    }
+    
+    // Extraire le body pour POST
+    std::string requestBody;
+    if (method == "POST") {
+        // Le body est tout ce qui reste après les headers
+        std::string bodyLine;
+        while (std::getline(requestStream, bodyLine)) {
+            if (!requestBody.empty()) requestBody += "\n";
+            requestBody += bodyLine;
+        }
+    }
+    
+    // Check if the CGI script exists and is executable
+    struct stat statbuf;
+    if (stat(cgiFilePath.c_str(), &statbuf) != 0 || !(statbuf.st_mode & S_IXUSR)) {
+        throw std::runtime_error(ERROR_404_RESPONSE);
+    }
+
+    // Create pipes for stdin, stdout
+    int stdinPipe[2], stdoutPipe[2];
+    if (pipe(stdinPipe) == -1 || pipe(stdoutPipe) == -1) {
+        throw std::runtime_error(ERROR_500_RESPONSE);
+    }
+
+    pid_t pid = fork();
+    if (pid == -1) {
+        close(stdinPipe[0]); close(stdinPipe[1]);
+        close(stdoutPipe[0]); close(stdoutPipe[1]);
+        throw std::runtime_error(ERROR_500_RESPONSE);
+    }
+
+    if (pid == 0) { // Child process
+        // Redirect stdin and stdout
+        dup2(stdinPipe[0], STDIN_FILENO);
+        dup2(stdoutPipe[1], STDOUT_FILENO);
+
+        // Close all pipe ends
+        close(stdinPipe[0]); close(stdinPipe[1]);
+        close(stdoutPipe[0]); close(stdoutPipe[1]);
+
+        // Set up environment variables
+        setenv("REQUEST_METHOD", method.c_str(), 1);
+        setenv("QUERY_STRING", queryString.c_str(), 1);
+        setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
+        setenv("SCRIPT_NAME", cgiFilePath.c_str(), 1);
+        setenv("SCRIPT_FILENAME", cgiFilePath.c_str(), 1);
+        setenv("PATH_INFO", path.c_str(), 1);
+        setenv("SERVER_NAME", "localhost", 1);
+        setenv("SERVER_PORT", to_string(port).c_str(), 1);
+        
+        // Headers spécifiques pour POST
+        if (method == "POST") {
+            std::string contentType = headers.count("Content-Type") ? headers["Content-Type"] : "application/x-www-form-urlencoded";
+            std::string contentLength = to_string(requestBody.length());
+            
+            setenv("CONTENT_TYPE", contentType.c_str(), 1);
+            setenv("CONTENT_LENGTH", contentLength.c_str(), 1);
+        } else {
+            setenv("CONTENT_LENGTH", "0", 1);
+        }
+        
+        // Ajouter les headers HTTP comme variables d'environnement
+        for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); ++it) {
+            std::string envName = "HTTP_" + it->first;
+            // Remplacer - par _ et mettre en majuscules
+            for (size_t i = 0; i < envName.length(); ++i) {
+                if (envName[i] == '-') envName[i] = '_';
+                envName[i] = std::toupper(envName[i]);
+            }
+            setenv(envName.c_str(), it->second.c_str(), 1);
+        }
+
+        // Execute the CGI script
+        execl(cgiFilePath.c_str(), cgiFilePath.c_str(), NULL);
+
+        // Si execl échoue
+        perror("execl failed");
+        exit(1);
+        
+    } else { // Parent process
+        close(stdinPipe[0]);  // On n'a pas besoin de lire depuis stdin
+        close(stdoutPipe[1]); // On n'a pas besoin d'écrire vers stdout
+
+        // Pour POST, envoyer le body au script via stdin
+        if (method == "POST" && !requestBody.empty()) {
+            ssize_t bytesWritten = write(stdinPipe[1], requestBody.c_str(), requestBody.length());
+            if (bytesWritten == -1) {
+                perror("Failed to write POST data to CGI script");
+            }
+        }
+        close(stdinPipe[1]); // Fermer stdin après écriture
+
+        // Read output from the CGI script
+        char buffer[4096];
+        std::string output;
+        ssize_t bytesRead;
+        
+        // Timeout pour éviter de rester bloqué
+        fd_set readfds;
+        struct timeval timeout;
+        timeout.tv_sec = 10;  // 10 secondes timeout
+        timeout.tv_usec = 0;
+        
+        while (true) {
+            FD_ZERO(&readfds);
+            FD_SET(stdoutPipe[0], &readfds);
+            
+            int selectResult = select(stdoutPipe[0] + 1, &readfds, NULL, NULL, &timeout);
+            if (selectResult == -1) {
+                break; // Erreur
+            } else if (selectResult == 0) {
+                break; // Timeout
+            }
+            
+            bytesRead = read(stdoutPipe[0], buffer, sizeof(buffer) - 1);
+            if (bytesRead <= 0) break;
+            
+            buffer[bytesRead] = '\0';
+            output.append(buffer, bytesRead);
+        }
+        
+        close(stdoutPipe[0]);
+
+        // Wait for the child process to finish
+        int status;
+        waitpid(pid, &status, 0);
+        
+        if (output.empty()) {
+            throw std::runtime_error(ERROR_500_RESPONSE);
+        }
+        
+        // Parse CGI response (headers + body)
+        std::string cgiResponse = parseCGIResponse(output);
+        return cgiResponse;
+    }
+}
+
+// Fonction helper pour parser la réponse CGI
+std::string method::parseCGIResponse(const std::string& cgiOutput) {
+    // Séparer headers et body
+    size_t headerEndPos = cgiOutput.find("\r\n\r\n");
+    if (headerEndPos == std::string::npos) {
+        headerEndPos = cgiOutput.find("\n\n");
+        if (headerEndPos == std::string::npos) {
+            // Pas de séparation headers/body trouvée, traiter comme du HTML pur
+            std::string response = "HTTP/1.1 200 OK\r\n";
+            response += "Content-Type: text/html\r\n";
+            response += "Content-Length: " + to_string(cgiOutput.length()) + "\r\n\r\n";
+            response += cgiOutput;
+            return response;
+        }
+        headerEndPos += 2; // pour "\n\n"
+    } else {
+        headerEndPos += 4; // pour "\r\n\r\n"
+    }
+    
+    std::string cgiHeaders = cgiOutput.substr(0, headerEndPos);
+    std::string cgiBody = cgiOutput.substr(headerEndPos);
+    
+    // Construire la réponse HTTP finale
+    std::string httpResponse = "HTTP/1.1 200 OK\r\n";
+    
+    // Ajouter les headers du CGI (s'il y en a)
+    if (!cgiHeaders.empty()) {
+        // Si le CGI a envoyé des headers, les inclure
+        std::istringstream headerStream(cgiHeaders);
+        std::string headerLine;
+        bool hasContentType = false;
+        
+        while (std::getline(headerStream, headerLine)) {
+            if (headerLine.empty() || headerLine == "\r") continue;
+            
+            if (!headerLine.empty() && headerLine[headerLine.length() - 1] == '\r') 
+                headerLine.erase(headerLine.length() - 1);
+            
+            if (headerLine.find("Content-Type:") != std::string::npos) {
+                hasContentType = true;
+            }
+            
+            httpResponse += headerLine + "\r\n";
+        }
+        
+        // Si pas de Content-Type spécifié, ajouter par défaut
+        if (!hasContentType) {
+            httpResponse += "Content-Type: text/html\r\n";
+        }
+    } else {
+        httpResponse += "Content-Type: text/html\r\n";
+    }
+    
+    // Ajouter Content-Length
+    httpResponse += "Content-Length: " + to_string(cgiBody.length()) + "\r\n\r\n";
+    
+    // Ajouter le body
+    httpResponse += cgiBody;
+    
+    return httpResponse;
+}
+
+bool method::isCGIScript(const std::string& filePath)
+{
+	// Check by extension
+	if (filePath.find(".py") != std::string::npos) return true;
+	if (filePath.find(".sh") != std::string::npos) return true;
+	if (filePath.find(".pl") != std::string::npos) return true;
+	if (filePath.find(".cgi") != std::string::npos) return true;
+	
+	// Check if file is executable
 	struct stat statbuf;
-	if (stat(cgiFilePath.c_str(), &statbuf) != 0 || !(statbuf.st_mode & S_IXUSR)) {
-		throw std::runtime_error(ERROR_404_RESPONSE);
+	if (stat(filePath.c_str(), &statbuf) == 0) {
+		return (statbuf.st_mode & S_IXUSR); // Executable by owner
 	}
-
-	// Create pipes
-	int stdinPipe[2], stdoutPipe[2];
-	if (pipe(stdinPipe) == -1 || pipe(stdoutPipe) == -1) {
-		throw std::runtime_error(ERROR_500_RESPONSE);
-	}
-
-	pid_t pid = fork();
-	if (pid == -1) {
-		throw std::runtime_error(ERROR_500_RESPONSE);
-	}
-
-	if (pid == 0) { // Child process
-		// Redirect stdin and stdout
-		dup2(stdinPipe[0], STDIN_FILENO);
-		dup2(stdoutPipe[1], STDOUT_FILENO);
-
-		close(stdinPipe[1]);
-		close(stdinPipe[0]);
-		close(stdoutPipe[1]);
-		close(stdoutPipe[0]);
-
-		// Set up environment variables
-		setenv("REQUEST_METHOD", "GET", 1);
-		setenv("QUERY_STRING", "", 1);
-		setenv("CONTENT_LENGTH", "0", 1);
-		setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
-		setenv("SCRIPT_NAME", cgiFilePath.c_str(), 1);
-
-		// Execute the CGI script
-		execl(cgiFilePath.c_str(), cgiFilePath.c_str(), NULL);
-
-		// If execl fails
-		perror("execl failed");
-		exit(1);
-	} else { // Parent process
-		close(stdinPipe[0]);
-		close(stdoutPipe[1]);
-
-		// Read output from the CGI script
-		char buffer[20000];
-		std::string output;
-		ssize_t bytesRead;
-		while ((bytesRead = read(stdoutPipe[0], buffer, sizeof(buffer))) > 0) {
-			std::cout << bytesRead << "buffer : " << buffer << std::endl;
-			output.append(buffer, bytesRead);
-		}
-		std::cout << "buffer : " << buffer << std::endl;
-		close(stdoutPipe[0]);
-		close(stdinPipe[1]);
-
-		// Wait for the child process to finish
-		int status;
-		waitpid(pid, &status, 0);
-		output = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + to_string(output.size()) + "\r\n\r\n" + output;
-		if (output.empty()) {
-			std::cout << "HERE" << std::endl;
-			throw std::runtime_error(ERROR_500_RESPONSE);
-		}
-		// Return the CGI output
-		return (output);
-	}
+	
+	return false;
 }
