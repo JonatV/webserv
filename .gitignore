@@ -6,3 +6,4 @@ fr.subject.pdf
 .vscode
 .vscode/settings.json
 diagram.txt
+config/evaluator.conf

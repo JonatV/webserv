@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/02 02:47:49 by jveirman          #+#    #+#             */
-/*   Updated: 2025/08/04 12:13:25 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/08/12 15:41:59 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -93,7 +93,7 @@ int main(int argc, char **argv) {
 		std::cerr << "Unexpected error: " << e.what() << std::endl;
 		return 1;
 	}
-
+	
 	WebServer webserv(config);
 	webserv.start();
 	return 0;

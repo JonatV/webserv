@@ -6,16 +6,18 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 15:55:05 by jveirman          #+#    #+#             */
-/*   Updated: 2025/08/04 15:41:16 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/08/12 15:42:41 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "WebServer.hpp"
 #include "Server.hpp"
+#include "../misc/Evaluator.hpp"
 
 WebServer::WebServer(Config& configFile)
 {
 	std::cout << "\e[2mCreating WebServer object\e[0m" << std::endl;
+	Evaluator evaluator;
 	initServers(configFile);
 }
 

@@ -6,7 +6,7 @@
 #    By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/19 16:57:04 by jveirman          #+#    #+#              #
-#    Updated: 2025/06/04 13:57:59 by jveirman         ###   ########.fr        #
+#    Updated: 2025/08/12 16:00:53 by jveirman         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -19,7 +19,8 @@ SRCS = main.cpp \
 		server/cookies_session.cpp \
 		parse/Config.cpp \
 		parse/ServerConfig.cpp \
-		parse/LocationConfig.cpp
+		parse/LocationConfig.cpp \
+		misc/Evaluator.cpp
 
 NAME = webserv
 CC = c++
@@ -34,7 +35,7 @@ endif
 
 OBJS = $(SRCS:.cpp=.o)
 
-all: $(NAME)
+all: $(NAME) prepareEval
 
 $(NAME): $(OBJS)
 	$(CC) $(CFLAGS) $(STD) $(DEV_FLAGS) $(OBJS) -o $(NAME)
@@ -47,4 +48,8 @@ clean:
 fclean : clean
 	rm -f $(NAME)
 re: fclean all
+
+prepareEval:
+	cp ../evaluator.conf ./config/
+
 .PHONY: all clean fclean re
