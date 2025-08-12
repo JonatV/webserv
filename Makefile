@@ -6,7 +6,7 @@
 #    By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/19 16:57:04 by jveirman          #+#    #+#              #
-#    Updated: 2025/08/12 16:00:53 by jveirman         ###   ########.fr        #
+#    Updated: 2025/08/12 16:16:00 by jveirman         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -52,4 +52,9 @@ re: fclean all
 prepareEval:
 	cp ../evaluator.conf ./config/
 
-.PHONY: all clean fclean re
+purge:
+	@echo "Purging hack.html"
+	@cp www/hack.template.html www/hack.html
+	@echo "hack.html purged and restored to clean template"
+
+.PHONY: all clean fclean re prepareEval purge
