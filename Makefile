@@ -6,7 +6,7 @@
 #    By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/19 16:57:04 by jveirman          #+#    #+#              #
-#    Updated: 2025/08/12 16:16:00 by jveirman         ###   ########.fr        #
+#    Updated: 2025/08/12 16:24:28 by jveirman         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -50,7 +50,7 @@ fclean : clean
 re: fclean all
 
 prepareEval:
-	cp ../evaluator.conf ./config/
+	cp ../evaluator.conf ./config/ || true
 
 purge:
 	@echo "Purging hack.html"
