@@ -530,11 +530,11 @@ def main():
                 border: 2px solid #8b7355;
                 border-radius: 12px;
                 padding: 40px;
-                margin: 20px;
                 box-shadow: 
                     0 8px 32px rgba(0,0,0,0.4),
                     inset 0 1px 2px rgba(201, 176, 55, 0.1);
                 position: relative;
+				margin: 0 auto;
             }}
             
             .main-title {{

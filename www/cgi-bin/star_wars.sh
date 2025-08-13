@@ -601,11 +601,11 @@ cat << 'EOF'
             border-image: linear-gradient(45deg, #00ff41, #0080ff, #ff0080, #ffff00) 1;
             border-radius: 20px;
             padding: 30px;
-            margin: 20px;
-            box-shadow: 
+s            box-shadow: 
                 0 0 50px rgba(0,255,65,0.3),
                 inset 0 0 50px rgba(0,255,65,0.1);
             position: relative;
+			margin: 0 auto;
         }
         
         .main-title {
