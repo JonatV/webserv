@@ -12,8 +12,17 @@ std::string method::GET(const std::string& request, int port, Server& server, bo
 	if (request.find("GET /register") != std::string::npos)
 		return (POST_303_RESPONSE("/index.html", true));
 
-	// Extraire le path
-	std::string path = request.substr(start, end - start);
+	// Extraire le path et séparer la query string
+	std::string fullPath = request.substr(start, end - start);
+	std::string path = fullPath;
+	
+	// *** IMPORTANT: Séparer path et query string pour le matching ***
+	size_t questionMarkPos = fullPath.find('?');
+	if (questionMarkPos != std::string::npos) {
+		path = fullPath.substr(0, questionMarkPos);
+		// La query string sera gérée par handleCGI
+	}
+	
 	const LocationConfig* location = server.matchLocation(path);
 	if (!location)
 		throw std::runtime_error(ERROR_404_RESPONSE);
@@ -27,6 +36,22 @@ std::string method::GET(const std::string& request, int port, Server& server, bo
 	std::string locationRoot = location->getLocationRoot();
 	std::string locationIndex = location->getLocationIndex();
 
+	// *** VÉRIFICATION CGI EN PREMIER ***
+	// Construire le chemin du fichier AVANT les autres vérifications
+	if (!locationRoot.empty() && !locationIndex.empty())
+	{
+		std::string filePath = locationRoot + locationIndex;
+		
+		// Check if it's a CGI script
+		if (isCGIScript(filePath))
+		{
+			std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mGET CGI request: " << filePath << "\e[0m" << std::endl;
+			return (handleCGI(request, filePath, port)); // *** RETURN ICI - NE PAS CONTINUER ***
+		}
+	}
+
+	// *** SEULEMENT SI CE N'EST PAS UN CGI, continuer avec les autres vérifications ***
+	
 	// Vérifier si c'est un répertoire avec autoindex
 	if (locationName != "/" && locationName[locationName.length() - 1] == '/') 
 	{
@@ -50,20 +75,11 @@ std::string method::GET(const std::string& request, int port, Server& server, bo
 		}
 	}
 
-	// Construire le chemin du fichier
+	// *** FICHIER STATIQUE ***
 	if (locationRoot.empty() || locationIndex.empty())
 		throw std::runtime_error(ERROR_500_RESPONSE);
 	
 	std::string filePath = locationRoot + locationIndex;
-
-	// *** VÉRIFICATION CGI ***
-	if (isCGIScript(filePath))
-	{
-		std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mGET CGI request: " << filePath << "\e[0m" << std::endl;
-		return (handleCGI(request, filePath, port));
-	}
-
-	// *** FICHIER STATIQUE ***
 	if (!filePath.empty())
 		return (method::foundPage(filePath, port, isRegistered));
 	else
@@ -158,7 +174,14 @@ std::string method::POST(const std::string& request, int port, Server &server)
 	if (start == std::string::npos || end == std::string::npos) 
 		throw std::runtime_error(ERROR_400_RESPONSE);
 	
-	std::string pathName = request.substr(start, end - start);
+	std::string fullPathName = request.substr(start, end - start);
+	std::string pathName = fullPathName;
+	
+	// *** IMPORTANT: Séparer path et query string pour le matching ***
+	size_t questionMarkPos = fullPathName.find('?');
+	if (questionMarkPos != std::string::npos) {
+		pathName = fullPathName.substr(0, questionMarkPos);
+	}
 	
 	// Cas spécial : requête de suppression via POST
 	if (request.find("POST /delete") != std::string::npos)
@@ -177,19 +200,19 @@ std::string method::POST(const std::string& request, int port, Server &server)
 	std::string locationRoot = location->getLocationRoot();
 	std::string locationIndex = location->getLocationIndex();
 	
-	if (locationRoot.empty() || locationIndex.empty())
-		throw std::runtime_error(ERROR_500_RESPONSE);
-	
-	std::string filePath = locationRoot + locationIndex;
-	
 	// *** VÉRIFICATION CGI EN PREMIER ***
-	if (isCGIScript(filePath))
+	if (!locationRoot.empty() && !locationIndex.empty())
 	{
-		std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST CGI request: " << filePath << "\e[0m" << std::endl;
-		return (handleCGI(request, filePath, port));
+		std::string filePath = locationRoot + locationIndex;
+		
+		if (isCGIScript(filePath))
+		{
+			std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST CGI request: " << filePath << "\e[0m" << std::endl;
+			return (handleCGI(request, filePath, port)); // *** RETURN ICI - NE PAS CONTINUER ***
+		}
 	}
 	
-	// *** TRAITEMENT POST CLASSIQUE (upload/form) ***
+	// *** TRAITEMENT POST CLASSIQUE seulement si ce n'est pas du CGI ***
 	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST request for: " << pathName << "\e[0m" << std::endl;
 	
 	// Vérifier la limite de taille du body
@@ -723,13 +746,13 @@ std::string method::handleCGI(const std::string& request, const std::string& cgi
     
     std::string path, queryString;
     size_t questionMarkPos = fullPath.find('?');
-    if (questionMarkPos != std::string::npos) {
-        path = fullPath.substr(0, questionMarkPos);
-        queryString = fullPath.substr(questionMarkPos + 1);
-    } else {
-        path = fullPath;
-        queryString = "";
-    }
+	if (questionMarkPos != std::string::npos) {
+		path = fullPath.substr(0, questionMarkPos);
+		queryString = fullPath.substr(questionMarkPos + 1);
+	} else {
+		path = fullPath;
+		queryString = "";
+	}
     
     // Parse les headers HTTP
     std::map<std::string, std::string> headers;
