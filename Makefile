@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+         #
+#    By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/19 16:57:04 by jveirman          #+#    #+#              #
-#    Updated: 2025/08/12 16:26:40 by eschmitz         ###   ########.fr        #
+#    Updated: 2025/08/16 15:07:00 by jveirman         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -35,7 +35,7 @@ endif
 
 OBJS = $(SRCS:.cpp=.o)
 
-all: $(NAME) prepareEval
+all: $(NAME) purge prepareEval
 
 $(NAME): $(OBJS)
 	$(CC) $(CFLAGS) $(STD) $(DEV_FLAGS) $(OBJS) -o $(NAME)

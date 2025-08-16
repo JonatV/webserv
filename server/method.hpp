@@ -19,8 +19,6 @@
 #include <map>
 #include <cctype>
 
-#define CGI1 "apps.cgi"
-#define CGI2 "star_wars.cgi"
 #define CERR_MSG(port, msg) std::cerr << "\e[31m[" + to_string(port) + "]\e[0m\t" + "\e[2m" + msg + "\e[0m" << std::endl
 
 const std::string DELETE_200_RESPONSE =
