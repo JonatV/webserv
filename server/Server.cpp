@@ -290,6 +290,29 @@ int	Server::getClientPort(int fd)
 	return (client->getClientPort());
 }
 
+void Server::shutdown()
+{
+	COUT_MSG(getPort(), "Shutting down server...");
+	
+	// Close all client connections
+	for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+	{
+		if (it->second) {
+			COUT_MSG(it->second->getClientPort(), "Closing client connection");
+			close(it->first);  // Close client socket
+		}
+	}
+	
+	// Close all server sockets
+	for (size_t i = 0; i < _serverSocketFds.size(); i++)
+	{
+		COUT_MSG(_ports[i], "Closing server socket");
+		close(_serverSocketFds[i]);
+	}
+	
+	COUT_MSG(getPort(), "Server shutdown complete");
+}
+
 Server::~Server()
 {
 	for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); ++it)

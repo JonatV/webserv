@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 15:55:05 by jveirman          #+#    #+#             */
-/*   Updated: 2025/08/12 15:42:41 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/08/16 16:05:21 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,27 @@ WebServer::~WebServer()
 	}
 	_fdsToServer.clear();
 	std::cout << "\e[2mDestroying WebServer object\e[0m" << std::endl;
+}
+
+void WebServer::shutdown()
+{
+	std::cout << "\e[2mInitiating graceful shutdown...\e[0m" << std::endl;
+	
+	// Close all client connections and server sockets
+	for (size_t i = 0; i < _servers.size(); i++)
+	{
+		if (_servers[i]) {
+			_servers[i]->shutdown();  // We'll need to implement this in Server class
+		}
+	}
+	
+	// Close all file descriptors in the map
+	for (std::map<int, Server*>::iterator it = _fdsToServer.begin(); it != _fdsToServer.end(); ++it) {
+		close(it->first);
+	}
+	_fdsToServer.clear();
+	
+	std::cout << "\e[32mGraceful shutdown completed.\e[0m" << std::endl;
 }
 
 
@@ -97,14 +118,27 @@ void WebServer::evenLoop(int sharedEpollFd)
 {
 	struct epoll_event events[MAX_QUEUE];
 	try {
-		while (true)
+		while (!SignalHandler::shouldShutdown())  // Check shutdown flag
 		{
-			int numEvents = epoll_wait(sharedEpollFd, events, MAX_QUEUE, -1); // give the number of events waiting to be processed
+			// Use timeout in epoll_wait to check shutdown signal periodically
+			int numEvents = epoll_wait(sharedEpollFd, events, MAX_QUEUE, 1000); // 1 second timeout
+			
+			if (SignalHandler::shouldShutdown()) {
+				std::cout << "Shutdown signal received. Closing server..." << std::endl;
+				break;
+			}
+			
 			if (numEvents == -1)
 			{
 				close(sharedEpollFd);
 				THROW_MSG("____", "Epoll wait failed");
 			}
+			
+			if (numEvents == 0) {
+				// Timeout occurred, continue to check shutdown flag
+				continue;
+			}
+			
 			for (int i = 0; i < numEvents; i++)
 			{
 				Server* server = _fdsToServer[events[i].data.fd];
@@ -143,6 +177,10 @@ void WebServer::evenLoop(int sharedEpollFd)
 	{
 		close(sharedEpollFd);
 	}
+	
+	// Perform graceful shutdown
+	shutdown();
+	close(sharedEpollFd);
 }
 
 void WebServer::registerClientFd(int fd, Server* server)

@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/08/04 13:15:18 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/08/16 16:06:35 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #define WEBSERVER_HPP
 
 #include "utils.hpp"
+#include "Signals.hpp"
 #include "../parse/Config.hpp"
 #include <vector>
 #include <iostream>
@@ -40,6 +41,7 @@ class WebServer
 		WebServer(Config &);
 		~WebServer();
 		void start();
+		void shutdown();
 
 		void initServers(Config &config);
 		void evenLoop(int sharedEpollFd);

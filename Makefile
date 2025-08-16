@@ -6,7 +6,7 @@
 #    By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/19 16:57:04 by jveirman          #+#    #+#              #
-#    Updated: 2025/08/16 15:07:00 by jveirman         ###   ########.fr        #
+#    Updated: 2025/08/16 16:06:25 by jveirman         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,6 +17,7 @@ SRCS = main.cpp \
 		server/method.cpp \
 		server/utils.cpp \
 		server/cookies_session.cpp \
+		server/Signals.cpp \
 		parse/Config.cpp \
 		parse/ServerConfig.cpp \
 		parse/LocationConfig.cpp \

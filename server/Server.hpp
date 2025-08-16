@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/04/21 18:27:59 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/08/16 15:56:37 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,6 +75,7 @@ class Server
 
 		~Server();
 		void						run();
+		void						shutdown();
 		void						acceptClient(int fd);
 		void						closeClient(struct epoll_event &event, int port);
 		int							treatMethod(struct epoll_event &event, int clientPort);
