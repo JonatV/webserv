@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/08/04 16:14:11 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/08/16 16:08:55 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,15 @@ void Server::run()
 		// create socket
 		if (serverSocketFd == -1)
 			THROW_MSG(port, "Socket can't be created");
+		
+		// Set SO_REUSEADDR to allow immediate port reuse after shutdown
+		int reuse = 1;
+		if (setsockopt(serverSocketFd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) == -1)
+		{
+			close(serverSocketFd);
+			THROW_MSG(port, "Failed to set SO_REUSEADDR");
+		}
+		
 		// Set the socket to be non-blocking
 		int retValue = setNonBlocking(serverSocketFd);
 		if (retValue == -1)
