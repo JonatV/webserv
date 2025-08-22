@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
+/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/08/22 18:02:48 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/08/22 22:16:23 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -105,12 +105,65 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 	if (bytesReceived < 0)
 		return (-1);
 	buffer[bytesReceived] = '\0';
+	
 	Client *client = _clients[clientSocketFd];
 	if (client == NULL)
 		throw std::runtime_error(ERROR_500_RESPONSE);
+	
 	try
 	{
 		cookies::cookTheCookies(buffer, client);
+		
+		// *** NOUVEAU : Vérification précoce du Content-Length pour 413 ***
+		std::string request(buffer);
+		size_t contentLengthPos = request.find("Content-Length: ");
+		if (contentLengthPos != std::string::npos) {
+			size_t lineEnd = request.find("\r\n", contentLengthPos);
+			if (lineEnd != std::string::npos) {
+				std::string contentLengthStr = request.substr(contentLengthPos + 16, lineEnd - contentLengthPos - 16);
+				ssize_t contentLength = std::atoi(contentLengthStr.c_str());
+				
+				// Vérification AVANT tout traitement
+				if (contentLength > _clientBodyLimit) {
+					std::string errorResponse = method::getErrorHtml(clientPort, ERROR_413_RESPONSE, *this, client->isRegistered());
+					if (send(clientSocketFd, errorResponse.c_str(), errorResponse.size(), 0) == -1)
+						return (-1);
+					
+					// *** FIX : Vider le socket pour éviter les requêtes corrompues ***
+					// Calculer combien de bytes il reste à recevoir
+					size_t headerEndPos = request.find("\r\n\r\n");
+					if (headerEndPos != std::string::npos) {
+						headerEndPos += 4; // Skip "\r\n\r\n"
+						ssize_t bodyAlreadyReceived = bytesReceived - headerEndPos;
+						ssize_t remainingBytes = contentLength - bodyAlreadyReceived;
+						
+						if (remainingBytes > 0) {
+							char discardBuffer[8192];
+							ssize_t totalDiscarded = 0;
+							
+							// Vider le socket de façon non-bloquante
+							while (totalDiscarded < remainingBytes) {
+								ssize_t toRead = std::min((ssize_t)sizeof(discardBuffer), remainingBytes - totalDiscarded);
+								ssize_t discarded = recv(clientSocketFd, discardBuffer, toRead, MSG_DONTWAIT);
+								
+								if (discarded <= 0) break; // Plus rien à lire ou erreur
+								totalDiscarded += discarded;
+								
+								// Sécurité : éviter une boucle infinie
+								if (totalDiscarded > contentLength) break;
+							}
+							
+							std::cout << "\e[33m[" << clientPort << "]\e[0m\t" 
+									  << "Discarded " << totalDiscarded << " bytes after 413 response" << std::endl;
+						}
+					}
+					
+					return (1); // Requête 413 traitée proprement
+				}
+			}
+		}
+		
+		// Traitement normal de la requête si pas de problème de taille
 		std::string response = selectMethod(buffer, clientPort, client->isRegistered());
 		if (send(clientSocketFd, response.c_str(), response.size(), 0) == -1)
 			return (-1);
