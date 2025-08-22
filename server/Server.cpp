@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/08/16 16:08:55 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/08/22 18:02:48 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,8 +120,13 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 		std::string errorResponse = method::getErrorHtml(clientPort, e.what(), *this, client->isRegistered());
 		if (errorResponse.empty())
 			errorResponse = ERROR_500_RESPONSE;
+		std::cout << "\e[31m debug errorResponse \e[0m" << std::endl;
 		if (send(clientSocketFd, errorResponse.c_str(), errorResponse.size(), 0) == -1)
+		{
+			std::cout << "\e[31m debug send errorResponse failed \e[0m" << std::endl;
 			return (-1);
+		}
+		std::cout << "\e[31m debug errorResponse sent \e[0m" << std::endl;
 	}
 	return (1);
 }
@@ -132,7 +137,7 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 std::string	Server::selectMethod(char buffer[BUFFER_SIZE], int port, bool isRegistered)
 {
 	std::string	request(buffer);
-	// std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mRequest received: \n" << request << "\e[0m" << std::endl; //dev
+	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mRequest received: \n" << request << "\e[0m" << std::endl; //dev
 	size_t end = request.find(" ");
 	if (end == std::string::npos)
 		throw std::runtime_error(ERROR_400_RESPONSE);

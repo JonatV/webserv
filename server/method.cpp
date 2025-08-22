@@ -90,7 +90,7 @@ std::string method::foundPage(const std::string& filepath, int port, bool isRegi
 {
 	std::ifstream	file(filepath.c_str());
 	(void)port; // dev
-	// std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mGET request for file: " << filepath << "\e[0m" << std::endl; //dev
+	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mGET request for file: " << filepath << "\e[0m" << std::endl; //dev
 	if (file.is_open())
 	{
 		std::string	textType;
@@ -230,6 +230,7 @@ std::string method::POST(const std::string& request, int port, Server &server)
 			{
 				std::cout << "\e[31m[" << port << "]\e[0m\t" << "Request body too large: " 
 						  << contentLength << " > " << server.getClientBodyLimit() << std::endl;
+				std::cout << "\e[31mDebug simple POST \e[0m" << std::endl;
 				throw std::runtime_error(ERROR_413_RESPONSE);
 			}
 		}
@@ -291,7 +292,10 @@ std::string method::handleFileUpload(const std::string& request, Server& server,
 	
 	// Vérifier la taille
 	if ((ssize_t)body.length() > server.getClientBodyLimit())
+	{
+		std::cout << "\e[31mDebug in handleFileUpload \e[0m" << std::endl;
 		throw std::runtime_error(ERROR_413_RESPONSE);
+	}
 	
 	// Générer un nom de fichier unique
 	std::string fileName = UPLOAD_PATH + to_string(time(0)) + "_upload.txt";
@@ -355,7 +359,10 @@ std::string method::postFromTerminal(const std::string &request, Server &server)
 
 	ssize_t bytesReceived = body.length();
 	if (bytesReceived > server.getClientBodyLimit())
+	{
+		std::cout << "\e[31mDebug POSTFROMTERMINAL \e[0m" << std::endl;
 		throw std::runtime_error(ERROR_413_RESPONSE);
+	}
 
 	// Déterminer l'extension selon le Content-Type
 	std::string extension = ".txt";
@@ -438,7 +445,10 @@ std::string method::postFromDashboard(const std::string &request, Server &server
 
 	ssize_t bytesReceived = content.length();
 	if (bytesReceived > server.getClientBodyLimit())
+	{
+		std::cout << "\e[31mDebug POSTFROMDASHBOARD \e[0m" << std::endl;
 		throw std::runtime_error(ERROR_413_RESPONSE);
+	}
 
 	if (content.empty())
 	{
