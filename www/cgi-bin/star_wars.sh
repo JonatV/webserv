@@ -29,22 +29,28 @@ get_character_info() {
     local character="$1"
     case "$character" in
         "luke")
-            echo "Luke Skywalker|Chevalier Jedi|Tatooine → Dagobah|Sabre laser vert|Détruit l'Étoile de la Mort|Fils d'Anakin Skywalker"
+            echo "Luke Skywalker|Chevalier Jedi|Tatooine → Dagobah|Sabre laser vert|A chopé sa soeur|Fils d'Anakin Skywalker"
             ;;
         "vader")
-            echo "Dark Vador|Seigneur Sith|Mustafar → Death Star|Sabre laser rouge|Bras droit de l'Empereur|Ancien Anakin Skywalker"
+            echo "Dark Vador|Seigneur Sith|Mustafar → Death Star|Sabre laser rouge|A cuit comme une merguez|Ancien Anakin Skywalker"
             ;;
         "leia")
-            echo "Princesse Leia Organa|Leader Rebelle|Alderaan|Blaster + Diplomatie|Résistance contre l'Empire|Sœur jumelle de Luke"
+            echo "Princesse Leia Organa|Leader Rebelle|Alderaan|Blaster + Diplomatie|A chopé son frère|Sœur jumelle de Luke"
             ;;
         "han")
-            echo "Han Solo|Contrebandier|Corellia|Blaster DL-44|Capitaine du Faucon Millenium|Ami fidèle et pilote hors pair"
+            echo "Han Solo|Contrebandier|Corellia|Blaster DL-44|A tiré en premier|Ami fidèle et pilote hors pair"
             ;;
         "yoda")
             echo "Maître Yoda|Grand Maître Jedi|Dagobah|Sabre laser + Force|900 ans d'âge|Entraîneur de Luke Skywalker"
             ;;
         "obiwan")
             echo "Obi-Wan Kenobi|Maître Jedi|Tatooine|Sabre laser bleu|Ermite de Ben Kenobi|Maître d'Anakin et Luke"
+            ;;
+        "jon")
+            echo "Jonny la chipie|Gros beauf|Waterloo|Sa calvasse réfléchit le soleil|A fait Cub3D et minishell solo|Sait pas réparer son vélo"
+            ;;
+        "ed")
+            echo "Edoulazone|Gros beauf|BX|Ses pets font fondre le métal|Va finir le common core seulement avec des fonctions de parsing|Est sacrément con"
             ;;
         *)
             echo "Agent Inconnu|Classification: INCONNUE|Outer Rim|Arme: CLASSIFIÉE|Mission: REDACTED|Statut: EN SURVEILLANCE"
@@ -1333,6 +1339,8 @@ cat << 'EOF'
                 <a href="?action=character&character=vader" class="imperial-btn">⚫ Dossier Dark Vador</a>
                 <a href="?action=character&character=leia" class="imperial-btn">👑 Dossier Princesse Leia</a>
                 <a href="?action=character&character=obiwan" class="imperial-btn">🧙 Dossier Obi-Wan</a>
+                <a href="?action=character&character=jon" class="imperial-btn">👨🏻‍🦲 Dossier jveirman</a>
+                <a href="?action=character&character=ed" class="imperial-btn">🍺 Dossier eschmitz</a>
                 <a href="?action=planet&planet=tatooine" class="imperial-btn">🏜️ Archives Tatooine</a>
                 <a href="?action=planet&planet=coruscant" class="imperial-btn">🌆 Archives Coruscant</a>
             </div>
