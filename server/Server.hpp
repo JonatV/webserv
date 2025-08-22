@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
+/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/08/16 15:56:37 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/08/22 22:38:11 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,7 +63,7 @@ class Server
 		int					setNonBlocking(int fd);
 		void				initSocketId(struct sockaddr_in &socketId, int port);
 
-		std::string			selectMethod(char buffer[BUFFER_SIZE], int port, bool);
+		std::string 		selectMethod(const char* buffer, int port, bool);
 		void				sendErrorAndCloseClient(int clientSocketFd, const std::string &errorResponse, int port);
 		
 		// Prevent Copying

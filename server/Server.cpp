@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/08/22 22:16:23 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/08/22 22:38:31 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -96,7 +96,6 @@ void Server::run()
 /// 		1 if the request is treated
 int	Server::treatMethod(struct epoll_event &event, int clientPort)
 {
-	std::string response = "";
 	int clientSocketFd = event.data.fd;
 	char buffer[BUFFER_SIZE] = {0};
 	ssize_t bytesReceived = recv(clientSocketFd, buffer, sizeof(buffer) - 1, 0);
@@ -114,8 +113,9 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 	{
 		cookies::cookTheCookies(buffer, client);
 		
-		// *** NOUVEAU : Vérification précoce du Content-Length pour 413 ***
 		std::string request(buffer);
+		
+		// *** Vérification et lecture complète du body pour les requêtes POST ***
 		size_t contentLengthPos = request.find("Content-Length: ");
 		if (contentLengthPos != std::string::npos) {
 			size_t lineEnd = request.find("\r\n", contentLengthPos);
@@ -129,11 +129,10 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 					if (send(clientSocketFd, errorResponse.c_str(), errorResponse.size(), 0) == -1)
 						return (-1);
 					
-					// *** FIX : Vider le socket pour éviter les requêtes corrompues ***
-					// Calculer combien de bytes il reste à recevoir
+					// Vider le socket pour éviter les requêtes corrompues
 					size_t headerEndPos = request.find("\r\n\r\n");
 					if (headerEndPos != std::string::npos) {
-						headerEndPos += 4; // Skip "\r\n\r\n"
+						headerEndPos += 4;
 						ssize_t bodyAlreadyReceived = bytesReceived - headerEndPos;
 						ssize_t remainingBytes = contentLength - bodyAlreadyReceived;
 						
@@ -141,15 +140,13 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 							char discardBuffer[8192];
 							ssize_t totalDiscarded = 0;
 							
-							// Vider le socket de façon non-bloquante
 							while (totalDiscarded < remainingBytes) {
 								ssize_t toRead = std::min((ssize_t)sizeof(discardBuffer), remainingBytes - totalDiscarded);
 								ssize_t discarded = recv(clientSocketFd, discardBuffer, toRead, MSG_DONTWAIT);
 								
-								if (discarded <= 0) break; // Plus rien à lire ou erreur
+								if (discarded <= 0) break;
 								totalDiscarded += discarded;
 								
-								// Sécurité : éviter une boucle infinie
 								if (totalDiscarded > contentLength) break;
 							}
 							
@@ -158,13 +155,60 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 						}
 					}
 					
-					return (1); // Requête 413 traitée proprement
+					return (1);
+				}
+				
+				// *** NOUVEAU : Si body > 2048 bytes, lire le reste ***
+				size_t headerEndPos = request.find("\r\n\r\n");
+				if (headerEndPos != std::string::npos) {
+					headerEndPos += 4;
+					ssize_t bodyAlreadyReceived = bytesReceived - headerEndPos;
+					ssize_t remainingBodyBytes = contentLength - bodyAlreadyReceived;
+					
+					if (remainingBodyBytes > 0) {
+						std::cout << "\e[34m[" << clientPort << "]\e[0m\t" 
+								  << "Reading remaining " << remainingBodyBytes << " bytes of body..." << std::endl;
+						
+						// Allouer un buffer pour le body complet
+						std::string completeBody;
+						completeBody.reserve(contentLength);
+						
+						// Ajouter la partie déjà reçue
+						if (bodyAlreadyReceived > 0) {
+							completeBody.append(request, headerEndPos, bodyAlreadyReceived);
+						}
+						
+						// Lire le reste du body
+						char bodyBuffer[8192];
+						ssize_t totalRead = 0;
+						
+						while (totalRead < remainingBodyBytes) {
+							ssize_t toRead = std::min((ssize_t)sizeof(bodyBuffer), remainingBodyBytes - totalRead);
+							ssize_t bytesRead = recv(clientSocketFd, bodyBuffer, toRead, 0);
+							
+							if (bytesRead <= 0) {
+								std::cout << "\e[31m[" << clientPort << "]\e[0m\t" 
+										  << "Error reading body: connection closed or error" << std::endl;
+								return (-1);
+							}
+							
+							completeBody.append(bodyBuffer, bytesRead);
+							totalRead += bytesRead;
+						}
+						
+						// Reconstruire la requête complète
+						std::string headers = request.substr(0, headerEndPos);
+						request = headers + completeBody;
+						
+						std::cout << "\e[32m[" << clientPort << "]\e[0m\t" 
+								  << "Complete request assembled: " << request.length() << " bytes total" << std::endl;
+					}
 				}
 			}
 		}
 		
-		// Traitement normal de la requête si pas de problème de taille
-		std::string response = selectMethod(buffer, clientPort, client->isRegistered());
+		// Traitement normal de la requête (maintenant complète)
+		std::string response = selectMethod(request.c_str(), clientPort, client->isRegistered());
 		if (send(clientSocketFd, response.c_str(), response.size(), 0) == -1)
 			return (-1);
 	}
@@ -187,7 +231,7 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 /// @brief find the method in the request and call the corresponding method
 /// @param buffer header of the request
 /// @return return the response of the method OR an empty string if the method is not allowed
-std::string	Server::selectMethod(char buffer[BUFFER_SIZE], int port, bool isRegistered)
+std::string Server::selectMethod(const char* buffer, int port, bool isRegistered)
 {
 	std::string	request(buffer);
 	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mRequest received: \n" << request << "\e[0m" << std::endl; //dev
