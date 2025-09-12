@@ -114,51 +114,18 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 		cookies::cookTheCookies(buffer, client);
 		
 		std::string request(buffer);
-		
-		// *** Vérification et lecture complète du body pour les requêtes POST ***
-		size_t contentLengthPos = request.find("Content-Length: ");
+		std::cout << "\e[36m[" << clientPort << "]\e[0m\t" 
+				  << "\e[1m--- Incoming Request ---\e[0m\n"
+				  << "\e[2m" << request << "\e[0m" << std::endl;
+		// *** Check for complete body reading for requests with Content-Length ***
+		size_t contentLengthPos = request.find("Content-Length: "); //dev
 		if (contentLengthPos != std::string::npos) {
 			size_t lineEnd = request.find("\r\n", contentLengthPos);
 			if (lineEnd != std::string::npos) {
 				std::string contentLengthStr = request.substr(contentLengthPos + 16, lineEnd - contentLengthPos - 16);
 				ssize_t contentLength = std::atoi(contentLengthStr.c_str());
 				
-				// Vérification AVANT tout traitement
-				if (contentLength > _clientBodyLimit) {
-					std::string errorResponse = method::getErrorHtml(clientPort, ERROR_413_RESPONSE, *this, client->isRegistered());
-					if (send(clientSocketFd, errorResponse.c_str(), errorResponse.size(), 0) == -1)
-						return (-1);
-					
-					// Vider le socket pour éviter les requêtes corrompues
-					size_t headerEndPos = request.find("\r\n\r\n");
-					if (headerEndPos != std::string::npos) {
-						headerEndPos += 4;
-						ssize_t bodyAlreadyReceived = bytesReceived - headerEndPos;
-						ssize_t remainingBytes = contentLength - bodyAlreadyReceived;
-						
-						if (remainingBytes > 0) {
-							char discardBuffer[8192];
-							ssize_t totalDiscarded = 0;
-							
-							while (totalDiscarded < remainingBytes) {
-								ssize_t toRead = std::min((ssize_t)sizeof(discardBuffer), remainingBytes - totalDiscarded);
-								ssize_t discarded = recv(clientSocketFd, discardBuffer, toRead, MSG_DONTWAIT);
-								
-								if (discarded <= 0) break;
-								totalDiscarded += discarded;
-								
-								if (totalDiscarded > contentLength) break;
-							}
-							
-							std::cout << "\e[33m[" << clientPort << "]\e[0m\t" 
-									  << "Discarded " << totalDiscarded << " bytes after 413 response" << std::endl;
-						}
-					}
-					
-					return (1);
-				}
-				
-				// *** NOUVEAU : Si body > 2048 bytes, lire le reste ***
+				// *** Read complete body if needed ***
 				size_t headerEndPos = request.find("\r\n\r\n");
 				if (headerEndPos != std::string::npos) {
 					headerEndPos += 4;
@@ -169,23 +136,25 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 						std::cout << "\e[34m[" << clientPort << "]\e[0m\t" 
 								  << "Reading remaining " << remainingBodyBytes << " bytes of body..." << std::endl;
 						
-						// Allouer un buffer pour le body complet
+						// Allocate buffer for complete body
 						std::string completeBody;
 						completeBody.reserve(contentLength);
 						
-						// Ajouter la partie déjà reçue
+						// Add already received part
 						if (bodyAlreadyReceived > 0) {
 							completeBody.append(request, headerEndPos, bodyAlreadyReceived);
 						}
 						
-						// Lire le reste du body
+						// Read the rest of the body
 						char bodyBuffer[8192];
 						ssize_t totalRead = 0;
 						
 						while (totalRead < remainingBodyBytes) {
 							ssize_t toRead = std::min((ssize_t)sizeof(bodyBuffer), remainingBodyBytes - totalRead);
 							ssize_t bytesRead = recv(clientSocketFd, bodyBuffer, toRead, 0);
-							
+							std::cout << "\e[36m[" << clientPort << "]\e[0m\t"
+									  << "\e[1m--- Reading Chunked Body ---\e[0m\n"
+									  << "\e[2m" << bodyBuffer << "\e[0m" << std::endl;
 							if (bytesRead <= 0) {
 								std::cout << "\e[31m[" << clientPort << "]\e[0m\t" 
 										  << "Error reading body: connection closed or error" << std::endl;
@@ -196,7 +165,7 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 							totalRead += bytesRead;
 						}
 						
-						// Reconstruire la requête complète
+						// Rebuild complete request
 						std::string headers = request.substr(0, headerEndPos);
 						request = headers + completeBody;
 						
@@ -234,7 +203,7 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 std::string Server::selectMethod(const char* buffer, int port, bool isRegistered)
 {
 	std::string	request(buffer);
-	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mRequest received: \n" << request << "\e[0m" << std::endl; //dev
+	// std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mRequest received: \n" << request << "\e[0m" << std::endl; //dev
 	size_t end = request.find(" ");
 	if (end == std::string::npos)
 		throw std::runtime_error(ERROR_400_RESPONSE);

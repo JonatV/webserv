@@ -224,15 +224,15 @@ std::string method::POST(const std::string& request, int port, Server &server)
 		if (lineEnd != std::string::npos)
 		{
 			contentLengthHeader = request.substr(contentLengthPos + 16, lineEnd - contentLengthPos - 16);
-			ssize_t contentLength = std::atoi(contentLengthHeader.c_str());
+			// ssize_t contentLength = std::atoi(contentLengthHeader.c_str()); //wip
 			
-			if (contentLength > server.getClientBodyLimit())
-			{
-				std::cout << "\e[31m[" << port << "]\e[0m\t" << "Request body too large: " 
-						  << contentLength << " > " << server.getClientBodyLimit() << std::endl;
-				std::cout << "\e[31mDebug simple POST \e[0m" << std::endl;
-				throw std::runtime_error(ERROR_413_RESPONSE);
-			}
+			// if (contentLength > server.getClientBodyLimit()) //wip
+			// { //wip
+			// 	std::cout << "\e[31m[" << port << "]\e[0m\t" << "Request body too large: "  //wip
+			// 			  << contentLength << " > " << server.getClientBodyLimit() << std::endl; //wip
+			// 	std::cout << "\e[31mDebug simple POST \e[0m" << std::endl; //wip
+			// 	throw std::runtime_error(ERROR_413_RESPONSE); //wip
+			// } //wip
 		}
 	}
 	
@@ -443,12 +443,12 @@ std::string method::postFromDashboard(const std::string &request, Server &server
 		content = body; // Fallback
 	}
 
-	ssize_t bytesReceived = content.length();
-	if (bytesReceived > server.getClientBodyLimit())
-	{
-		std::cout << "\e[31mDebug POSTFROMDASHBOARD \e[0m" << std::endl;
-		throw std::runtime_error(ERROR_413_RESPONSE);
-	}
+	// ssize_t bytesReceived = content.length(); //wip
+	// if (bytesReceived > server.getClientBodyLimit()) //wip
+	// { //wip
+	// 	std::cout << "\e[31mDebug POSTFROMDASHBOARD \e[0m" << std::endl; //wip
+	// 	throw std::runtime_error(ERROR_413_RESPONSE); //wip
+	// } //wip
 
 	if (content.empty())
 	{
