@@ -97,104 +97,169 @@ void Server::run()
 int	Server::treatMethod(struct epoll_event &event, int clientPort)
 {
 	int clientSocketFd = event.data.fd;
-	char buffer[BUFFER_SIZE] = {0};
-	ssize_t bytesReceived = recv(clientSocketFd, buffer, sizeof(buffer) - 1, 0);
-	if (bytesReceived == 0)
-		return (0);
-	if (bytesReceived < 0)
-		return (-1);
-	buffer[bytesReceived] = '\0';
-	
 	Client *client = _clients[clientSocketFd];
 	if (client == NULL)
 		throw std::runtime_error(ERROR_500_RESPONSE);
+
+	// Handle based on event type
+	if (event.events & EPOLLIN) {
+		return handleReadEvent(clientSocketFd, client, clientPort);
+	} else if (event.events & EPOLLOUT) {
+		return handleWriteEvent(clientSocketFd, client, clientPort);
+	}
 	
-	try
-	{
+	return -1; // Unknown event type
+}
+
+/// @brief Handle EPOLLIN events - reading data from client
+/// @return -1 error, 0 close connection, 1 continue
+int Server::handleReadEvent(int clientSocketFd, Client* client, int clientPort)
+{
+	char buffer[BUFFER_SIZE] = {0};
+	
+	// ONLY ONE recv() call per epoll cycle - this is critical for evaluation
+	ssize_t bytesReceived = recv(clientSocketFd, buffer, sizeof(buffer) - 1, 0);
+	
+	if (bytesReceived == 0) return 0;  // Connection closed
+	if (bytesReceived < 0) return -1;  // Error
+	
+	buffer[bytesReceived] = '\0';
+	
+	try {
 		cookies::cookTheCookies(buffer, client);
 		
-		std::string request(buffer);
+		// Append received data to client's request buffer
+		client->appendRequestData(buffer, bytesReceived);
+		
 		std::cout << "\e[36m[" << clientPort << "]\e[0m\t" 
-				  << "\e[1m--- Incoming Request ---\e[0m\n"
-				  << "\e[2m" << request << "\e[0m" << std::endl;
-		// *** Check for complete body reading for requests with Content-Length ***
-		size_t contentLengthPos = request.find("Content-Length: "); //dev
-		if (contentLengthPos != std::string::npos) {
-			size_t lineEnd = request.find("\r\n", contentLengthPos);
-			if (lineEnd != std::string::npos) {
-				std::string contentLengthStr = request.substr(contentLengthPos + 16, lineEnd - contentLengthPos - 16);
-				ssize_t contentLength = std::atoi(contentLengthStr.c_str());
-				
-				// *** Read complete body if needed ***
-				size_t headerEndPos = request.find("\r\n\r\n");
-				if (headerEndPos != std::string::npos) {
-					headerEndPos += 4;
-					ssize_t bodyAlreadyReceived = bytesReceived - headerEndPos;
-					ssize_t remainingBodyBytes = contentLength - bodyAlreadyReceived;
-					
-					if (remainingBodyBytes > 0) {
-						std::cout << "\e[34m[" << clientPort << "]\e[0m\t" 
-								  << "Reading remaining " << remainingBodyBytes << " bytes of body..." << std::endl;
-						
-						// Allocate buffer for complete body
-						std::string completeBody;
-						completeBody.reserve(contentLength);
-						
-						// Add already received part
-						if (bodyAlreadyReceived > 0) {
-							completeBody.append(request, headerEndPos, bodyAlreadyReceived);
-						}
-						
-						// Read the rest of the body
-						char bodyBuffer[8192];
-						ssize_t totalRead = 0;
-						
-						while (totalRead < remainingBodyBytes) {
-							ssize_t toRead = std::min((ssize_t)sizeof(bodyBuffer), remainingBodyBytes - totalRead);
-							ssize_t bytesRead = recv(clientSocketFd, bodyBuffer, toRead, 0);
-							std::cout << "\e[36m[" << clientPort << "]\e[0m\t"
-									  << "\e[1m--- Reading Chunked Body ---\e[0m\n"
-									  << "\e[2m" << bodyBuffer << "\e[0m" << std::endl;
-							if (bytesRead <= 0) {
-								std::cout << "\e[31m[" << clientPort << "]\e[0m\t" 
-										  << "Error reading body: connection closed or error" << std::endl;
-								return (-1);
-							}
-							
-							completeBody.append(bodyBuffer, bytesRead);
-							totalRead += bytesRead;
-						}
-						
-						// Rebuild complete request
-						std::string headers = request.substr(0, headerEndPos);
-						request = headers + completeBody;
-						
-						std::cout << "\e[32m[" << clientPort << "]\e[0m\t" 
-								  << "Complete request assembled: " << request.length() << " bytes total" << std::endl;
-					}
-				}
+				  << "Received " << bytesReceived << " bytes (total: " 
+				  << client->getRequestBufferSize() << " bytes)" << std::endl;
+		
+		// Debug: Show end of current buffer to check for header boundaries
+		std::string currentBuffer = client->getCompleteRequest();
+		if (currentBuffer.length() > 50) {
+			std::string bufferEnd = currentBuffer.substr(currentBuffer.length() - 50);
+			// Replace non-printable chars for debug
+			for (size_t i = 0; i < bufferEnd.length(); i++) {
+				if (bufferEnd[i] == '\r') bufferEnd[i] = '?';
+				if (bufferEnd[i] == '\n') bufferEnd[i] = '!';
 			}
+			std::cout << "\e[35m[" << clientPort << "]\e[0m\t" 
+					  << "Buffer end: ..." << bufferEnd << std::endl;
 		}
 		
-		// Traitement normal de la requête (maintenant complète)
-		std::string response = selectMethod(request.c_str(), clientPort, client->isRegistered());
-		if (send(clientSocketFd, response.c_str(), response.size(), 0) == -1)
-			return (-1);
-	}
-	catch (const std::runtime_error &e)
-	{
-		std::string errorResponse = method::getErrorHtml(clientPort, e.what(), *this, client->isRegistered());
-		if (errorResponse.empty())
-			errorResponse = ERROR_500_RESPONSE;
-		std::cout << "\e[31m debug errorResponse \e[0m" << std::endl;
-		if (send(clientSocketFd, errorResponse.c_str(), errorResponse.size(), 0) == -1)
-		{
-			std::cout << "\e[31m debug send errorResponse failed \e[0m" << std::endl;
-			return (-1);
+		// Check if we have a complete HTTP request
+		if (client->hasCompleteRequest()) {
+			// Process the complete request
+			std::string completeRequest = client->getCompleteRequest();
+			std::cout << "\e[32m[" << clientPort << "]\e[0m\t" 
+					  << "Complete request received (" << completeRequest.length() << " bytes)" << std::endl;
+			
+			// Try to generate response - catch errors here
+			try {
+				std::string response = selectMethod(completeRequest.c_str(), clientPort, client->isRegistered());
+				client->setResponse(response);
+			}
+			catch (const std::runtime_error &e) {
+				// Generate error response immediately and set it
+				std::string errorResponse = method::getErrorHtml(clientPort, e.what(), *this, client->isRegistered());
+				if (errorResponse.empty())
+					errorResponse = ERROR_500_RESPONSE;
+				
+				client->setResponse(errorResponse);
+				std::cout << "\e[31m[" << clientPort << "]\e[0m\t" 
+						  << "Generated error response for: " << e.what() << std::endl;
+			}
+			
+			// Switch to EPOLLOUT mode for sending response (or error)
+			struct epoll_event writeEvent;
+			writeEvent.events = EPOLLOUT;
+			writeEvent.data.fd = clientSocketFd;
+			
+			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientSocketFd, &writeEvent) == -1) {
+				std::cout << "\e[31m[" << clientPort << "]\e[0m\t" 
+						  << "Failed to switch to EPOLLOUT mode" << std::endl;
+				return -1;
+			}
+			
+			std::cout << "\e[33m[" << clientPort << "]\e[0m\t" 
+					  << "Switched to write mode" << std::endl;
 		}
-		std::cout << "\e[31m debug errorResponse sent \e[0m" << std::endl;
+		// If request not complete, stay in EPOLLIN mode for next cycle
+		
+		return 1;
 	}
-	return (1);
+	catch (const std::exception &e) {
+		// Handle unexpected errors during request reading/parsing
+		std::cout << "\e[31m[" << clientPort << "]\e[0m\t" 
+				  << "Unexpected error during request reading: " << e.what() << std::endl;
+		return -1;
+	}
+}
+
+/// @brief Handle EPOLLOUT events - sending response to client
+/// @return -1 error, 0 close connection, 1 continue
+int Server::handleWriteEvent(int clientSocketFd, Client* client, int clientPort)
+{
+	const std::string& response = client->getResponse();
+	
+	if (response.empty()) {
+		std::cout << "\e[31m[" << clientPort << "]\e[0m\t" 
+				  << "No response to send" << std::endl;
+		return 0; // Close connection
+	}
+	
+	// ONLY ONE send() call per epoll cycle - this is critical for evaluation
+	ssize_t bytesSent = send(clientSocketFd, response.c_str(), response.size(), 0);
+	
+	if (bytesSent < 0) {
+		std::cout << "\e[31m[" << clientPort << "]\e[0m\t" 
+				  << "Failed to send response" << std::endl;
+		return -1;
+	}
+	
+	std::cout << "\e[32m[" << clientPort << "]\e[0m\t" 
+			  << "Sent " << bytesSent << " bytes" << std::endl;
+	
+	if (bytesSent == (ssize_t)response.size()) {
+		// Complete response sent
+		std::cout << "\e[32m[" << clientPort << "]\e[0m\t" 
+				  << "Response sent successfully" << std::endl;
+		
+		// Check if we should keep connection alive
+		std::string completeRequest = client->getCompleteRequest();
+		bool keepAlive = (completeRequest.find("Connection: keep-alive") != std::string::npos) ||
+						 (completeRequest.find("Connection: Keep-Alive") != std::string::npos);
+		
+		if (keepAlive) {
+			// Reset client state for new request and switch back to EPOLLIN
+			client->resetForNewRequest();
+			
+			struct epoll_event readEvent;
+			readEvent.events = EPOLLIN;
+			readEvent.data.fd = clientSocketFd;
+			
+			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientSocketFd, &readEvent) == -1) {
+				std::cout << "\e[31m[" << clientPort << "]\e[0m\t" 
+						  << "Failed to switch back to EPOLLIN mode" << std::endl;
+				return 0; // Close on error
+			}
+			
+			std::cout << "\e[33m[" << clientPort << "]\e[0m\t" 
+					  << "Keep-alive: switched back to read mode" << std::endl;
+			return 1; // Keep connection open
+		} else {
+			return 0; // Close connection
+		}
+	} else {
+		// Partial send - update response with remaining data
+		std::string remaining = response.substr(bytesSent);
+		client->setResponse(remaining);
+		
+		std::cout << "\e[33m[" << clientPort << "]\e[0m\t" 
+				  << "Partial send, " << remaining.size() << " bytes remaining" << std::endl;
+		return 1; // Continue in EPOLLOUT mode
+	}
 }
 
 /// @brief find the method in the request and call the corresponding method

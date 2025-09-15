@@ -166,7 +166,19 @@ void WebServer::evenLoop(int sharedEpollFd)
 							server->closeClient(events[i], clientPort);
 						
 					}
-					else if ((events[i].events & EPOLLOUT) || (events[i].events & EPOLLERR))
+					else if (events[i].events & EPOLLOUT)
+					{
+						// Handle write events - send response
+						int retValue = server->treatMethod(events[i], clientPort);
+						if (retValue == -1)
+						{
+							server->closeClient(events[i], clientPort);
+							CERR_MSG(clientPort, "Error sending response");
+						}
+						else if (retValue == 0)
+							server->closeClient(events[i], clientPort);
+					}
+					else if (events[i].events & EPOLLERR)
 						server->closeClient(events[i], clientPort);
 				}
 				

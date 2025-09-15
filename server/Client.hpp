@@ -19,6 +19,8 @@
 #include <unistd.h>
 #include <iostream>
 #include <map>
+#include <cstdlib>
+
 
 class Client
 {
@@ -31,6 +33,12 @@ class Client
 		int					_serverPort;
 		bool				_isRegistered;
 		std::map<std::string, std::string> _cookies;
+		
+		// State machine data
+		std::string			_requestBuffer;		// Accumulates request data
+		std::string			_response;			// Response to send
+		size_t				_expectedContentLength;
+		bool				_hasContentLength;
 	public:
 		Client(int clientSocketFd, struct sockaddr_in clientSocketId, int serverPort);
 		~Client();
@@ -41,6 +49,15 @@ class Client
 
 		void			setRegistered(bool registered);
 		void			setCookies(std::map<std::string, std::string> cookies);
+		
+		// State machine methods
+		void			appendRequestData(const char* data, size_t len);
+		bool			hasCompleteRequest();
+		std::string		getCompleteRequest();
+		size_t			getRequestBufferSize() const;
+		void			setResponse(const std::string& response);
+		const std::string& getResponse() const;
+		void			resetForNewRequest(); // Reset state for new request
 };
 
 #endif

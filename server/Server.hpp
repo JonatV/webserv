@@ -65,6 +65,8 @@ class Server
 
 		std::string 		selectMethod(const char* buffer, int port, bool);
 		void				sendErrorAndCloseClient(int clientSocketFd, const std::string &errorResponse, int port);
+		int					handleReadEvent(int clientSocketFd, Client* client, int clientPort);
+		int					handleWriteEvent(int clientSocketFd, Client* client, int clientPort);
 		
 		// Prevent Copying
 		Server(const Server& other);
