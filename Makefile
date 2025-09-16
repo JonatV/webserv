@@ -6,7 +6,7 @@
 #    By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/12/19 16:57:04 by jveirman          #+#    #+#              #
-#    Updated: 2025/08/16 16:06:25 by jveirman         ###   ########.fr        #
+#    Updated: 2025/09/16 12:13:17 by jveirman         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -51,7 +51,11 @@ fclean : clean
 re: fclean all
 
 prepareEval:
-	cp ../evaluator.conf ./config/ || true
+	@if ! cp ../evaluator.conf ./config/ 2>/dev/null; then \
+		echo "\e[33mevaluator.conf not found, using default configuration.\e[0m"; \
+	else \
+		echo "\e[32mevaluator.conf copied to config/ directory.\e[0m"; \
+	fi
 
 purge:
 	@echo "Purging hack.html"

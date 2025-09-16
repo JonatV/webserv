@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/08/22 22:38:31 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/09/16 19:09:00 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,168 +97,130 @@ void Server::run()
 int	Server::treatMethod(struct epoll_event &event, int clientPort)
 {
 	int clientSocketFd = event.data.fd;
-	Client *client = _clients[clientSocketFd];
-	if (client == NULL)
-		throw std::runtime_error(ERROR_500_RESPONSE);
-
-	// Handle based on event type
+	Client *client = _clients[clientSocketFd]; //wip error handling for null
 	if (event.events & EPOLLIN) {
-		return handleReadEvent(clientSocketFd, client, clientPort);
+		return handleReadEvent(client, clientPort);
 	} else if (event.events & EPOLLOUT) {
-		return handleWriteEvent(clientSocketFd, client, clientPort);
+		return handleWriteEvent(client, clientPort);
 	}
-	
-	return -1; // Unknown event type
+	return -1;
 }
 
-/// @brief Handle EPOLLIN events - reading data from client
-/// @return -1 error, 0 close connection, 1 continue
-int Server::handleReadEvent(int clientSocketFd, Client* client, int clientPort)
+int Server::handleReadEvent(Client* client, int clientPort)
 {
-	char buffer[BUFFER_SIZE] = {0};
+	char buffer[8192]; // 8kb
+	ssize_t bytesRead = recv(client->getClientSocketFd(), buffer, sizeof(buffer) - 1, 0);
+	if (bytesRead == -1 || bytesRead == 0)
+		return bytesRead;
+	buffer[bytesRead] = '\0';
+	client->appendToRequestBuffer(buffer);
+	while (true) {
+		if (client->getState() == Client::READING_HEADERS)
+		{
+			handleReadHeaders(client);
+			if (client->getState() == Client::READING_BODY)
+				continue;
+			if (client->getState() == Client::READY_TO_RESPOND)
+				continue;
+			break;
+		}
+		else if (client->getState() == Client::READING_BODY)
+		{
+			handleReadBody(client);
+			if (client->getState() == Client::READY_TO_RESPOND)
+				continue;
+			break;
+		}
+		else if (client->getState() == Client::READY_TO_RESPOND)
+		{
+			handleReadyToRespond(client, buffer, clientPort);
+			break;
+		}
+		else {
+			break;
+		}
+	}
+	return 1;
+}
+
+void Server::handleReadHeaders(Client* client)
+{
+	if (client->requestBufferContains("\r\n\r\n", 0) != -1) {
+		client->setHeadersComplete(true);
+		parseRequestHeaders(client);
+	}
+}
+
+void Server::handleReadBody(Client* client)
+{
+	size_t headerEndPos = client->getRequestBuffer().find("\r\n\r\n");
+	if (headerEndPos == std::string::npos) return;
 	
-	// ONLY ONE recv() call per epoll cycle - this is critical for evaluation
-	ssize_t bytesReceived = recv(clientSocketFd, buffer, sizeof(buffer) - 1, 0);
+	size_t bodyStartPos = headerEndPos + 4;
+	size_t totalBufferSize = client->getRequestBuffer().size();
 	
-	if (bytesReceived == 0) return 0;  // Connection closed
-	if (bytesReceived < 0) return -1;  // Error
-	
-	buffer[bytesReceived] = '\0';
-	
+	if (totalBufferSize > bodyStartPos) {
+		size_t currentBodySize = totalBufferSize - bodyStartPos;
+		size_t expectedBodySize = client->getExpectedContentLength();
+		if (currentBodySize >= expectedBodySize) {
+			client->setBodyComplete(true);
+			client->setParsed(true);
+			client->setState(Client::READY_TO_RESPOND);
+		}
+	}
+}
+
+void Server::handleReadyToRespond(Client* client, char* buffer, int clientPort)
+{
 	try {
 		cookies::cookTheCookies(buffer, client);
-		
-		// Append received data to client's request buffer
-		client->appendRequestData(buffer, bytesReceived);
-		
-		std::cout << "\e[36m[" << clientPort << "]\e[0m\t" 
-				  << "Received " << bytesReceived << " bytes (total: " 
-				  << client->getRequestBufferSize() << " bytes)" << std::endl;
-		
-		// Debug: Show end of current buffer to check for header boundaries
-		std::string currentBuffer = client->getCompleteRequest();
-		if (currentBuffer.length() > 50) {
-			std::string bufferEnd = currentBuffer.substr(currentBuffer.length() - 50);
-			// Replace non-printable chars for debug
-			for (size_t i = 0; i < bufferEnd.length(); i++) {
-				if (bufferEnd[i] == '\r') bufferEnd[i] = '?';
-				if (bufferEnd[i] == '\n') bufferEnd[i] = '!';
-			}
-			std::cout << "\e[35m[" << clientPort << "]\e[0m\t" 
-					  << "Buffer end: ..." << bufferEnd << std::endl;
+		std::string response = selectMethod(client->getRequestBuffer().c_str(), clientPort, client->getIsRegisteredCookies());
+		client->setResponse(response);
+		client->setState(Client::WRITING_RESPONSE);
+		switchToWriteMode(client->getClientSocketFd(), clientPort);
+	} catch (const std::runtime_error& e) {
+		std::string errorResponse = method::getErrorHtml(clientPort, e.what(), *this, client->getIsRegisteredCookies());
+		if (errorResponse.empty()) {
+			errorResponse = ERROR_500_RESPONSE; // fallback
 		}
-		
-		// Check if we have a complete HTTP request
-		if (client->hasCompleteRequest()) {
-			// Process the complete request
-			std::string completeRequest = client->getCompleteRequest();
-			std::cout << "\e[32m[" << clientPort << "]\e[0m\t" 
-					  << "Complete request received (" << completeRequest.length() << " bytes)" << std::endl;
-			
-			// Try to generate response - catch errors here
-			try {
-				std::string response = selectMethod(completeRequest.c_str(), clientPort, client->isRegistered());
-				client->setResponse(response);
-			}
-			catch (const std::runtime_error &e) {
-				// Generate error response immediately and set it
-				std::string errorResponse = method::getErrorHtml(clientPort, e.what(), *this, client->isRegistered());
-				if (errorResponse.empty())
-					errorResponse = ERROR_500_RESPONSE;
-				
-				client->setResponse(errorResponse);
-				std::cout << "\e[31m[" << clientPort << "]\e[0m\t" 
-						  << "Generated error response for: " << e.what() << std::endl;
-			}
-			
-			// Switch to EPOLLOUT mode for sending response (or error)
-			struct epoll_event writeEvent;
-			writeEvent.events = EPOLLOUT;
-			writeEvent.data.fd = clientSocketFd;
-			
-			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientSocketFd, &writeEvent) == -1) {
-				std::cout << "\e[31m[" << clientPort << "]\e[0m\t" 
-						  << "Failed to switch to EPOLLOUT mode" << std::endl;
-				return -1;
-			}
-			
-			std::cout << "\e[33m[" << clientPort << "]\e[0m\t" 
-					  << "Switched to write mode" << std::endl;
-		}
-		// If request not complete, stay in EPOLLIN mode for next cycle
-		
-		return 1;
+		client->setResponse(errorResponse);
+		client->setState(Client::WRITING_RESPONSE);
+		client->setKeepAlive(false);
+		switchToWriteMode(client->getClientSocketFd(), clientPort);
 	}
-	catch (const std::exception &e) {
-		// Handle unexpected errors during request reading/parsing
-		std::cout << "\e[31m[" << clientPort << "]\e[0m\t" 
-				  << "Unexpected error during request reading: " << e.what() << std::endl;
-		return -1;
+}
+
+void Server::parseRequestHeaders(Client* client)
+{
+	std::string request = client->getRequestBuffer();
+	parseContentLength(request, client);
+	parseKeepAlive(request, client);
+	if (client->getHasContentLength()) {
+		client->setState(Client::READING_BODY);
+	} else {
+		client->setState(Client::READY_TO_RESPOND);
+		client->setParsed(true);
 	}
 }
 
 /// @brief Handle EPOLLOUT events - sending response to client
 /// @return -1 error, 0 close connection, 1 continue
-int Server::handleWriteEvent(int clientSocketFd, Client* client, int clientPort)
+int Server::handleWriteEvent(Client* client, int clientPort)
 {
-	const std::string& response = client->getResponse();
-	
-	if (response.empty()) {
-		std::cout << "\e[31m[" << clientPort << "]\e[0m\t" 
-				  << "No response to send" << std::endl;
+	(void)clientPort;
+	if (client->getState() != Client::WRITING_RESPONSE)
+		return -1;
+	std::string response = client->getResponse();
+	ssize_t sentNow = send(client->getClientSocketFd(), response.c_str(), response.size(), 0);
+	if (sentNow <= 0 || ((size_t)sentNow != response.size())) {
 		return 0; // Close connection
 	}
-	
-	// ONLY ONE send() call per epoll cycle - this is critical for evaluation
-	ssize_t bytesSent = send(clientSocketFd, response.c_str(), response.size(), 0);
-	
-	if (bytesSent < 0) {
-		std::cout << "\e[31m[" << clientPort << "]\e[0m\t" 
-				  << "Failed to send response" << std::endl;
-		return -1;
-	}
-	
-	std::cout << "\e[32m[" << clientPort << "]\e[0m\t" 
-			  << "Sent " << bytesSent << " bytes" << std::endl;
-	
-	if (bytesSent == (ssize_t)response.size()) {
-		// Complete response sent
-		std::cout << "\e[32m[" << clientPort << "]\e[0m\t" 
-				  << "Response sent successfully" << std::endl;
-		
-		// Check if we should keep connection alive
-		std::string completeRequest = client->getCompleteRequest();
-		bool keepAlive = (completeRequest.find("Connection: keep-alive") != std::string::npos) ||
-						 (completeRequest.find("Connection: Keep-Alive") != std::string::npos);
-		
-		if (keepAlive) {
-			// Reset client state for new request and switch back to EPOLLIN
-			client->resetForNewRequest();
-			
-			struct epoll_event readEvent;
-			readEvent.events = EPOLLIN;
-			readEvent.data.fd = clientSocketFd;
-			
-			if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientSocketFd, &readEvent) == -1) {
-				std::cout << "\e[31m[" << clientPort << "]\e[0m\t" 
-						  << "Failed to switch back to EPOLLIN mode" << std::endl;
-				return 0; // Close on error
-			}
-			
-			std::cout << "\e[33m[" << clientPort << "]\e[0m\t" 
-					  << "Keep-alive: switched back to read mode" << std::endl;
-			return 1; // Keep connection open
-		} else {
-			return 0; // Close connection
-		}
+	if (client->getKeepAlive()) {
+		client->resetForNewRequest();
+		switchToReadMode(client->getClientSocketFd(), clientPort);
+		return 1;
 	} else {
-		// Partial send - update response with remaining data
-		std::string remaining = response.substr(bytesSent);
-		client->setResponse(remaining);
-		
-		std::cout << "\e[33m[" << clientPort << "]\e[0m\t" 
-				  << "Partial send, " << remaining.size() << " bytes remaining" << std::endl;
-		return 1; // Continue in EPOLLOUT mode
+		return 0;
 	}
 }
 
@@ -472,6 +434,12 @@ Server::~Server()
 	}
 }
 
+/*
+┌───────────────────────────────────┐
+│              GETTER               │
+└───────────────────────────────────┘
+*/
+
 int Server::getPort() const
 {
 	return (_ports[0]);
@@ -480,11 +448,6 @@ int Server::getPort() const
 std::vector<int> Server::getServerSocketFds() const
 {
 	return (_serverSocketFds);
-}
-
-void Server::setEpollFd(int epollFd)
-{
-	_epollFd = epollFd;
 }
 
 std::vector<int> Server::getRunningPorts() const
@@ -505,4 +468,91 @@ ssize_t Server::getClientBodyLimit() const
 std::map<int, Client *> Server::getClients() const
 {
 	return (_clients);
+}
+
+/*
+┌───────────────────────────────────┐
+│              SETTER               │
+└───────────────────────────────────┘
+*/
+
+void Server::setEpollFd(int epollFd)
+{
+	_epollFd = epollFd;
+}
+
+/*
+┌───────────────────────────────────┐
+│              PARSER               │
+└───────────────────────────────────┘
+*/
+
+void	Server::parseContentLength(const std::string& request, Client* client)
+{
+	size_t pos = request.find("Content-Length:");
+	if (pos != std::string::npos) {
+		pos += 15; // Move past "Content-Length:"
+		while (pos < request.size() && (request[pos] == ' ' || request[pos] == '\t'))
+			++pos; // Skip whitespace
+		size_t endPos = request.find("\r\n", pos);
+		if (endPos != std::string::npos) {
+			std::string lengthStr = request.substr(pos, endPos - pos);
+			std::stringstream ss(lengthStr);
+			size_t contentLength;
+			ss >> contentLength;
+			client->setExpectedContentLength(contentLength);
+			client->setHasContentLength(true);
+		}
+	}
+}
+
+void	Server::parseKeepAlive(const std::string& request, Client* client)
+{
+	size_t pos = request.find("Connection:");
+	if (pos != std::string::npos) {
+		pos += 11; // Move past "Connection:"
+		while (pos < request.size() && (request[pos] == ' ' || request[pos] == '\t'))
+			++pos; // Skip whitespace
+		size_t endPos = request.find("\r\n", pos);
+		if (endPos != std::string::npos) {
+			std::string connectionValue = request.substr(pos, endPos - pos);
+			if (connectionValue == "keep-alive" || connectionValue == "Keep-Alive") {
+				client->setKeepAlive(true);
+			} else {
+				client->setKeepAlive(false);
+			}
+		}
+	} else {
+		client->setKeepAlive(true);
+	}
+}
+
+/*
+┌───────────────────────────────────┐
+│              HELPER               │
+└───────────────────────────────────┘
+*/
+
+void Server::switchToWriteMode(int clientSocketFd, int clientPort)
+{
+	(void)clientPort;
+	struct epoll_event writeEvent;
+	writeEvent.events = EPOLLOUT;
+	writeEvent.data.fd = clientSocketFd;
+	
+	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientSocketFd, &writeEvent) == -1) {
+		throw std::runtime_error(ERROR_500_RESPONSE);
+	}
+}
+
+void Server::switchToReadMode(int clientSocketFd, int clientPort)
+{
+	(void)clientPort;
+	struct epoll_event readEvent;
+	readEvent.events = EPOLLIN | EPOLLET; // Edge triggered
+	readEvent.data.fd = clientSocketFd;
+	
+	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientSocketFd, &readEvent) == -1) {
+		throw std::runtime_error(ERROR_500_RESPONSE);
+	}
 }

@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 15:55:05 by jveirman          #+#    #+#             */
-/*   Updated: 2025/08/16 16:05:21 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/16 18:46:17 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -154,34 +154,11 @@ void WebServer::evenLoop(int sharedEpollFd)
 						CERR_MSG(server->getPort(), "Error getting client port");
 						continue;
 					}
-					if (events[i].events & EPOLLIN)
-					{
-						int retValue = server->treatMethod(events[i], clientPort);
-						if (retValue == -1)
-						{
-							server->closeClient(events[i], clientPort);
-							CERR_MSG(clientPort, "Error processing request");
-						}
-						else if (retValue == 0)
-							server->closeClient(events[i], clientPort);
-						
-					}
-					else if (events[i].events & EPOLLOUT)
-					{
-						// Handle write events - send response
-						int retValue = server->treatMethod(events[i], clientPort);
-						if (retValue == -1)
-						{
-							server->closeClient(events[i], clientPort);
-							CERR_MSG(clientPort, "Error sending response");
-						}
-						else if (retValue == 0)
-							server->closeClient(events[i], clientPort);
-					}
-					else if (events[i].events & EPOLLERR)
+					if (events[i].events & EPOLLERR)
 						server->closeClient(events[i], clientPort);
+					int retValue = server->treatMethod(events[i], clientPort);
+					std::cout << "\e[36m[" << clientPort << "]\e[0m\t" << "treatMethod returned: " << retValue << std::endl; //dev
 				}
-				
 			}
 		}
 	}

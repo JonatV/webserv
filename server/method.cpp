@@ -129,7 +129,7 @@ std::string method::getErrorHtml(int port, const std::string& errorMessage, Serv
 		if (errorCode.length() != 3)
 			errorCode = "500";
 	}
-	// check iun the server map error page
+	// check if the server map error page
 	std::map<int, std::string> errorPages = server.getErrorPages();
 	int errorCodeInt = atoi(errorCode.c_str());
 	if (errorPages.find(errorCodeInt) != errorPages.end())

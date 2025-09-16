@@ -4,7 +4,7 @@ void cookies::cookTheCookies(char buffer[], Client *client)
 {
 	std::string request(buffer);
 	// check if the its a unregistered client
-	if (client->isRegistered())
+	if (client->getIsRegisteredCookies())
 		return ;
 	// check if the request is a GET
 	if (request.find("GET") == std::string::npos)
