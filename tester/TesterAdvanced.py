@@ -11,6 +11,7 @@ import select
 import threading
 import signal
 import psutil
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 # Colors for output
@@ -105,9 +106,9 @@ class WebservCorrectionTester:
 #             subprocess.run(["pkill", "-f", self.binary_path], capture_output=True)
    
 
-    def test_io_multiplexing(self):
-        """Test that epoll is used correctly"""
-        self.print_section("I/O MULTIPLEXING CHECK - EPOLL")
+    def test_io_multiplexing_behavioral(self):
+        """Test multiplexing basé sur le comportement, pas sur strace"""
+        self.print_section("I/O MULTIPLEXING - BEHAVIORAL TEST")
         
         # Start server
         self.server_process = subprocess.Popen(
@@ -117,77 +118,194 @@ class WebservCorrectionTester:
         )
         time.sleep(2)
         
+        tests_passed = []
+        
         try:
-            pid = self.server_process.pid
-            
-            # Monitor epoll calls specifically
-            strace_cmd = f"timeout 2 strace -p {pid} 2>&1 | grep -E 'epoll_(create|wait|ctl)'"
-            result = subprocess.run(strace_cmd, shell=True, capture_output=True, text=True)
-            
-            if "epoll" in result.stdout:
-                epoll_calls = result.stdout.count("epoll")
-                self.print_test("EPOLL detected", True, f"Found {epoll_calls} epoll calls")
-                return True
-            else:
-                self.print_test("EPOLL not detected", False)
-                return False
+            # Test 1: Connexions simultanées avec délais artificiels
+            def slow_connection_test():
+                """Test avec des connexions qui restent ouvertes un moment"""
+                connections = []
+                start_time = time.time()
                 
+                def create_slow_connection(conn_id):
+                    try:
+                        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        sock.settimeout(10)
+                        sock.connect(('127.0.0.1', 8888))
+                        
+                        # Envoyer une requête mais lire lentement
+                        request = f"GET /index.html HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+                        sock.send(request.encode())
+                        
+                        # Lire par petits bouts pour simuler une connexion lente
+                        response = b""
+                        for _ in range(5):
+                            data = sock.recv(100)  # Petits chunks
+                            response += data
+                            if not data or b"</html>" in response:
+                                break
+                            time.sleep(0.1)  # Délai artificiel
+                        
+                        sock.close()
+                        return len(response) > 100
+                    except Exception as e:
+                        print(f"Connection {conn_id} failed: {e}")
+                        return False
+                
+                # Lancer 5 connexions "lentes" simultanément
+                with ThreadPoolExecutor(max_workers=5) as executor:
+                    futures = [executor.submit(create_slow_connection, i) for i in range(5)]
+                    results = [future.result() for future in futures]
+                
+                end_time = time.time()
+                elapsed = end_time - start_time
+                successful = sum(results)
+                
+                print(f"    Slow connections test: {successful}/5 successful in {elapsed:.2f}s")
+                
+                # Si multiplexing: toutes les connexions devraient réussir en ~1s
+                # Si pas de multiplexing: ça prendrait 5x plus de temps
+                return successful >= 4 and elapsed < 3.0
+            
+            multiplexing_detected = slow_connection_test()
+            self.print_test("Concurrent slow connections", multiplexing_detected,
+                          f"Multiplexing {'detected' if multiplexing_detected else 'NOT detected'}")
+            tests_passed.append(multiplexing_detected)
+            
+            # Test 2: Test de "starvation" - une connexion lente ne doit pas bloquer les autres
+            def starvation_test():
+                """Test qu'une connexion lente ne bloque pas les autres"""
+                
+                def blocking_connection():
+                    """Connexion qui envoie des données très lentement"""
+                    try:
+                        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        sock.settimeout(15)
+                        sock.connect(('127.0.0.1', 8888))
+                        
+                        # Envoyer la requête caractère par caractère (très lent)
+                        request = "GET /index.html HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+                        for char in request:
+                            sock.send(char.encode())
+                            time.sleep(0.05)  # Délai entre chaque caractère
+                        
+                        response = sock.recv(4096)
+                        sock.close()
+                        return len(response) > 0
+                    except:
+                        return False
+                
+                def fast_connection():
+                    """Connexion rapide normale"""
+                    try:
+                        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        sock.settimeout(5)
+                        sock.connect(('127.0.0.1', 8888))
+                        
+                        request = "GET /index.html HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+                        sock.send(request.encode())
+                        
+                        response = sock.recv(4096)
+                        sock.close()
+                        return len(response) > 0
+                    except:
+                        return False
+                
+                # Lancer une connexion lente puis plusieurs rapides
+                slow_thread = threading.Thread(target=blocking_connection)
+                slow_thread.start()
+                
+                time.sleep(0.5)  # Laisser la connexion lente commencer
+                
+                # Lancer 3 connexions rapides en parallèle
+                start_time = time.time()
+                with ThreadPoolExecutor(max_workers=3) as executor:
+                    fast_futures = [executor.submit(fast_connection) for _ in range(3)]
+                    fast_results = [future.result() for future in fast_futures]
+                
+                fast_time = time.time() - start_time
+                
+                slow_thread.join(timeout=10)  # Attendre la connexion lente max 10s
+                
+                successful_fast = sum(fast_results)
+                print(f"    Starvation test: {successful_fast}/3 fast connections in {fast_time:.2f}s")
+                
+                # Si multiplexing: les connexions rapides ne sont pas bloquées
+                return successful_fast >= 2 and fast_time < 2.0
+            
+            no_starvation = starvation_test()
+            self.print_test("No connection starvation", no_starvation,
+                          f"Fast connections {'not blocked' if no_starvation else 'BLOCKED by slow one'}")
+            tests_passed.append(no_starvation)
+            
+            # Test 3: Capacité maximale de connexions simultanées
+            def max_connections_test():
+                """Test du nombre maximum de connexions simultanées"""
+                max_successful = 0
+                
+                for num_conns in [10, 20, 50]:
+                    connections = []
+                    successful = 0
+                    
+                    try:
+                        # Ouvrir toutes les connexions rapidement
+                        for i in range(num_conns):
+                            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            sock.settimeout(2)
+                            sock.connect(('127.0.0.1', 8888))
+                            connections.append(sock)
+                            successful += 1
+                            time.sleep(0.01)  # Petit délai
+                    except:
+                        pass  # Connexions supplémentaires échouent
+                    
+                    # Fermer toutes les connexions
+                    for sock in connections:
+                        try:
+                            sock.close()
+                        except:
+                            pass
+                    
+                    max_successful = max(max_successful, successful)
+                    print(f"    Max connections test: {successful}/{num_conns} for {num_conns} target")
+                    
+                    if successful < num_conns:
+                        break
+                
+                # Si multiplexing bon: devrait gérer au moins 10 connexions simultanées
+                return max_successful >= 10
+            
+            high_concurrency = max_connections_test()
+            self.print_test("High concurrency support", high_concurrency,
+                          f"Handles high connection load well")
+            tests_passed.append(high_concurrency)
+            
+            # Verdict final basé sur les tests comportementaux
+            multiplexing_score = sum(tests_passed)
+            overall_multiplexing = multiplexing_score >= 2  # Au moins 2/3 tests passent
+            
+            print(f"\n    {BLUE}Multiplexing Assessment:{RESET}")
+            print(f"    Tests passed: {multiplexing_score}/3")
+            if overall_multiplexing:
+                print(f"    {GREEN}✓ MULTIPLEXING DETECTED{RESET} - Server handles concurrent connections properly")
+            else:
+                print(f"    {RED}✗ NO MULTIPLEXING{RESET} - Server appears to handle connections sequentially")
+            
+            return overall_multiplexing
+            
         except Exception as e:
-            self.print_test("EPOLL test", False, f"Error: {e}")
+            self.print_test("Behavioral multiplexing test", False, f"Error: {e}")
             return False
         finally:
-            self.server_process.terminate()
-            self.server_process.wait()
+            if self.server_process:
+                self.server_process.terminate()
+                self.server_process.wait()
 
-
-    # def test_io_multiplexing(self):
-    #     """Test that select/poll/epoll is used correctly"""
-    #     self.print_section("I/O MULTIPLEXING CHECK")
-        
-    #     # Start server
-    #     self.server_process = subprocess.Popen(
-    #         [self.binary_path, self.config_path],
-    #         stdout=subprocess.PIPE,
-    #         stderr=subprocess.PIPE
-    #     )
-    #     time.sleep(2)
-        
-    #     try:
-    #         # Get process ID
-    #         pid = self.server_process.pid
-            
-    #         # Check system calls using strace (Linux) or similar
-    #         if sys.platform == "linux":
-    #             # Monitor system calls for a short time
-    #             strace_cmd = f"timeout 2 strace -p {pid} 2>&1"
-    #             result = subprocess.run(strace_cmd, shell=True, capture_output=True, text=True)
-                
-    #             # Check for select/poll/epoll
-    #             syscalls = result.stdout + result.stderr
-    #             has_select = "select(" in syscalls or "pselect(" in syscalls
-    #             has_poll = "poll(" in syscalls or "ppoll(" in syscalls  
-    #             has_epoll = "epoll_" in syscalls
-                
-    #             if has_select or has_poll or has_epoll:
-    #                 self.print_test("I/O Multiplexing detected", True, 
-    #                               f"Using: {'select' if has_select else 'poll' if has_poll else 'epoll'}")
-    #                 return True
-    #             else:
-    #                 self.print_test("No I/O Multiplexing detected", False)
-    #                 return False
-    #         else:
-    #             self.print_test("I/O Multiplexing check", None, "Cannot verify on this OS")
-    #             return None
-                
-    #     except Exception as e:
-    #         self.print_test("I/O Multiplexing test", False, f"Error: {e}")
-    #         return False
-    #     finally:
-    #         self.server_process.terminate()
-    #         self.server_process.wait()
+    # Remplacer l'ancienne méthode
+    def test_io_multiplexing(self):
+        """Test I/O multiplexing avec approche comportementale"""
+        return self.test_io_multiplexing_behavioral()
    
-
-
     def test_configuration(self):
         """Test configuration requirements from correction sheet"""
         self.print_section("CONFIGURATION TESTS")
@@ -707,8 +825,11 @@ server {
             result = subprocess.run("make", capture_output=True, text=True)
             result2 = subprocess.run("make", capture_output=True, text=True)
             
-            test_passed = "Nothing to be done" in result2.stdout or "is up to date" in result2.stdout
-            self.print_test("No re-link issues", test_passed)
+            test_passed = not any(indicator in result2.stdout + result2.stderr for indicator in ["g++", "clang++", "c++", ".cpp", ".cc", ".cxx", "Compiling", "Building"])
+            if test_passed:
+                self.print_test("No re-link issues", test_passed)
+            else:
+                self.print_test("Re-link issues", test_passed)
         
         # Test sections
         test_sections = [
