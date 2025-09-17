@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
+/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/09/17 12:07:46 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/17 15:38:14 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -114,7 +114,7 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 
 int Server::handleReadEvent(Client* client, int clientPort)
 {
-	char buffer[8192]; // 8kb
+	char buffer[100000];
 	ssize_t bytesRead = recv(client->getClientSocketFd(), buffer, sizeof(buffer) - 1, 0);
 	if (bytesRead == -1 || bytesRead == 0)
 		return bytesRead;
@@ -172,9 +172,12 @@ void Server::handleReadBody(Client* client)
 	size_t bodyStartPos = headerEndPos + 4;
 	size_t totalBufferSize = client->getRequestBuffer().size();
 	
+	std::cout << "Checker body read" << std::endl;
+	
 	if (totalBufferSize > bodyStartPos) {
 		size_t currentBodySize = totalBufferSize - bodyStartPos;
 		size_t expectedBodySize = client->getExpectedContentLength();
+		std::cout << "Checker informations: " << currentBodySize << " | " << expectedBodySize << std::endl;
 		if (currentBodySize >= expectedBodySize) {
 			client->setBodyComplete(true);
 			client->setParsed(true);
