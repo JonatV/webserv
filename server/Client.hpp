@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/09/16 18:58:44 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/17 11:16:41 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,11 +27,11 @@ class Client
 	public:
 		// Client state machine
 		enum State { 
-			READING_HEADERS,
-			READING_BODY,
-			READY_TO_RESPOND,
-			WRITING_RESPONSE,
-			CLOSING
+			READING_HEADERS, // 0
+			READING_BODY,    // 1
+			READY_TO_RESPOND, // 2
+			WRITING_RESPONSE, // 3
+			CLOSING           // 4
 		};
 		
 	private:

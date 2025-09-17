@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/09/16 19:09:00 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/17 12:07:46 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,7 +97,13 @@ void Server::run()
 int	Server::treatMethod(struct epoll_event &event, int clientPort)
 {
 	int clientSocketFd = event.data.fd;
-	Client *client = _clients[clientSocketFd]; //wip error handling for null
+	Client *client = _clients[clientSocketFd];
+	
+	if (!client) {
+		COUT_MSG(clientPort, "Ignoring event for disconnected client");
+		return 0;
+	}
+	
 	if (event.events & EPOLLIN) {
 		return handleReadEvent(client, clientPort);
 	} else if (event.events & EPOLLOUT) {
@@ -114,7 +120,14 @@ int Server::handleReadEvent(Client* client, int clientPort)
 		return bytesRead;
 	buffer[bytesRead] = '\0';
 	client->appendToRequestBuffer(buffer);
+	if (!(client->getRequestBuffer().find("/style/style.css") != std::string::npos || client->getRequestBuffer().find("/favicon.ico") != std::string::npos))
+	{
+		std::cout << "\e[32m[" << clientPort << "]\e[0m\t" << "Received " << bytesRead << " bytes" << std::endl; //dev
+		std::cout << "\e[34m[" << clientPort << "]\e[0m\t" << "\e[32mRequest received: \n" << buffer << "\e[0m" << std::endl; //dev
+	}
 	while (true) {
+		std::cout << "\e[33m[" << clientPort << "]\e[0m\t" << "Cycle through loop: Client state: ";
+		std::cout << client->getState() << std::endl; //dev
 		if (client->getState() == Client::READING_HEADERS)
 		{
 			handleReadHeaders(client);
@@ -207,19 +220,25 @@ void Server::parseRequestHeaders(Client* client)
 /// @return -1 error, 0 close connection, 1 continue
 int Server::handleWriteEvent(Client* client, int clientPort)
 {
-	(void)clientPort;
-	if (client->getState() != Client::WRITING_RESPONSE)
+	if (client->getState() != Client::WRITING_RESPONSE) {
+		std::cout << "\e[31m[" << clientPort << "]\e[0m\t" << "handleWriteEvent called but client not in WRITING_RESPONSE state" << std::endl; //dev
 		return -1;
+	}
+	
 	std::string response = client->getResponse();
+	std::cout << "\e[36m[" << clientPort << "]\e[0m\t" << "Sending response (" << response.size() << " bytes)" << std::endl; //dev
+	
 	ssize_t sentNow = send(client->getClientSocketFd(), response.c_str(), response.size(), 0);
 	if (sentNow <= 0 || ((size_t)sentNow != response.size())) {
 		return 0; // Close connection
 	}
 	if (client->getKeepAlive()) {
+		std::cout << "\e[32m[" << clientPort << "]\e[0m\t" << "Keep-alive: resetting for new request" << std::endl; //dev
 		client->resetForNewRequest();
 		switchToReadMode(client->getClientSocketFd(), clientPort);
 		return 1;
 	} else {
+		std::cout << "\e[33m[" << clientPort << "]\e[0m\t" << "No keep-alive: closing connection" << std::endl; //dev
 		return 0;
 	}
 }
@@ -230,7 +249,6 @@ int Server::handleWriteEvent(Client* client, int clientPort)
 std::string Server::selectMethod(const char* buffer, int port, bool isRegistered)
 {
 	std::string	request(buffer);
-	// std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mRequest received: \n" << request << "\e[0m" << std::endl; //dev
 	size_t end = request.find(" ");
 	if (end == std::string::npos)
 		throw std::runtime_error(ERROR_400_RESPONSE);
@@ -299,6 +317,13 @@ void Server::sendErrorAndCloseClient(int clientSocketFd, const std::string &erro
 void Server::closeClient(struct epoll_event &event, int port)
 {
 	int clientSocketFd = event.data.fd;
+	
+	// Check if client exists before closing
+	if (_clients.find(clientSocketFd) == _clients.end()) {
+		std::cout << "\e[33m[" << port << "]\e[0m\t" << "Client " << clientSocketFd << " already closed/doesn't exist" << std::endl; //dev
+		return;
+	}
+	
 	if (epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientSocketFd, NULL) == -1)
 	{
 		close(clientSocketFd);
@@ -306,6 +331,9 @@ void Server::closeClient(struct epoll_event &event, int port)
 		THROW_MSG(port, "Failed to remove client socket from epoll");
 	}
 	COUT_MSG(port, "Client disconnected");
+	
+	// Delete the client object before erasing from map
+	delete _clients[clientSocketFd];
 	_clients.erase(clientSocketFd);
 	close(clientSocketFd);
 	_webServer->unregisterClientFd(clientSocketFd);
@@ -518,12 +546,15 @@ void	Server::parseKeepAlive(const std::string& request, Client* client)
 			std::string connectionValue = request.substr(pos, endPos - pos);
 			if (connectionValue == "keep-alive" || connectionValue == "Keep-Alive") {
 				client->setKeepAlive(true);
+				std::cout << "\e[32m[" << client->getClientPort() << "]\e[0m\t" << "Keep-alive: TRUE (found '" << connectionValue << "')" << std::endl; //dev
 			} else {
 				client->setKeepAlive(false);
+				std::cout << "\e[33m[" << client->getClientPort() << "]\e[0m\t" << "Keep-alive: FALSE (found '" << connectionValue << "')" << std::endl; //dev
 			}
 		}
 	} else {
 		client->setKeepAlive(true);
+		std::cout << "\e[32m[" << client->getClientPort() << "]\e[0m\t" << "Keep-alive: TRUE (default, no Connection header)" << std::endl; //dev
 	}
 }
 
