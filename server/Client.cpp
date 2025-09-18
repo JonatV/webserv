@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:12:55 by jveirman          #+#    #+#             */
-/*   Updated: 2025/09/16 19:03:20 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/18 10:18:36 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -96,6 +96,14 @@ std::string							Client::getResponse() const {
 	return (_response);
 }
 
+size_t	Client::getBytesSent() const {
+	return _bytesSent;
+}
+
+size_t								Client::getReceivedContentLength() const {
+	return (_receivedContentLength);
+}
+
 /*
 ┌───────────────────────────────────┐
 │              SETTER               │
@@ -141,12 +149,12 @@ void	Client::setResponse(const std::string& response) {
 	_response = response;
 }
 
-size_t	Client::getBytesSent() const {
-	return _bytesSent;
-}
-
 void	Client::setBytesSent(size_t bytes) {
 	_bytesSent = bytes;
+}
+
+void	Client::setReceivedContentLength(size_t bytes) {
+	_receivedContentLength = bytes;
 }
 
 void	Client::resetForNewRequest() {
