@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/09/18 10:17:38 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/18 13:54:40 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@
 class Client
 {
 	public:
-		// Client state machine
+		// Client state
 		enum State { 
 			READING_HEADERS, // 0
 			READING_BODY,    // 1
@@ -42,19 +42,19 @@ class Client
 		int					_serverPort;
 		bool				_isRegisteredCookies;
 		// request storage
-		std::string			_requestBuffer;		// Accumulates request data
-		std::string			_response;			// Response to send
-		size_t				_bytesSent;			// Track partial response sends
+		std::string			_requestBuffer;
+		std::string			_response;
+		size_t				_bytesSent;
 		// request info
 		State				_state;
-		bool				_parsed;             // Request fully parsed flag
-		bool				_keepAlive;          // Connection: keep-alive flag
+		bool				_parsed;
+		bool				_keepAlive;
 		// header info
-		bool				_headersComplete;    // Headers fully received flag
+		bool				_headersComplete;
 		bool				_hasContentLength;
 		// body settings
 		size_t				_expectedContentLength;
-		size_t				_receivedContentLength; // Tracks body bytes received
+		size_t				_receivedContentLength;
 		bool				_bodyComplete;
 		
 		// cookies storage

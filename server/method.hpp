@@ -80,34 +80,34 @@ const std::string POST_201_RESPONSE =
 class Server;
 namespace method
 {
-	std::string GET(const std::string& request, int port, Server &server, bool);
-	std::string POST(const std::string &request, int port, Server &server);
-	std::string DELETE(const std::string& request, int port, Server &server);
-	
-	std::string foundPage(const std::string& filePath, int port, bool);
-	std::string getErrorHtml(int port, const std::string& errorMessage, Server &server, bool);
-	
-	std::vector<std::string> listFiles(const char* path);
-	std::string	generateMethodsPage(bool);
-	std::string	generateAutoIndexPage(const LocationConfig* location, bool);
-	std::string	generateListHrefHtml(std::vector<std::string> allFiles);
-	std::string	generaleListCheckHtml(std::vector<std::string> allFiles, const std::string& path);
-	std::string checkDeleteRequest(int port, const std::string &request, Server &server);
-	std::string	handleDeleteRequest(const std::string& request);
-	std::string	deleteTargetFiles(std::vector<std::string>);
-	std::string	trimFileName(std::string);
-	std::string	postFromDashboard(const std::string &request, Server &server);
-	std::string	postFromTerminal(const std::string &request, Server &server);
-	bool		checkPermissions(const std::string& type, const LocationConfig* location);
+	std::string					GET(const std::string& request, int port, Server &server, bool);
+	std::string					POST(const std::string &request, int port, Server &server);
+	std::string					DELETE(const std::string& request, Server &server);
+
+	std::string					foundPage(const std::string& filePath, bool isRegistered);
+	std::string					getErrorHtml(int port, const std::string& errorMessage, Server &server, bool isRegistered);
+
+	std::vector<std::string>	listFiles(const char* path);
+	std::string					generateMethodsPage(bool isRegistered);
+	std::string					generateAutoIndexPage(const LocationConfig* location, bool isRegistered);
+	std::string					generateListHrefHtml(std::vector<std::string> allFiles);
+	std::string					generateListCheckHtml(std::vector<std::string> allFiles, const std::string& path);
+	std::string					checkDeleteRequest(const std::string &request, Server &server);
+	std::string					handleDeleteRequest(const std::string& request);
+	std::string					deleteTargetFiles(std::vector<std::string>);
+	std::string					trimFileName(std::string);
+	std::string					postFromDashboard(const std::string &request, Server &server);
+	std::string					postFromTerminal(const std::string &request, Server &server);
+	bool						checkPermissions(const std::string& type, const LocationConfig* location);
 	
 	// CGI
-	std::string handleCGI(const std::string& request, const std::string& cgiFilePath, int port);
-	std::string parseCGIResponse(const std::string& cgiOutput);
-	bool 		isCGIScript(const std::string& filePath);
-	std::string handleFileUpload(const std::string& request, Server& server, int port);
+	std::string					handleCGI(const std::string& request, const std::string& cgiFilePath, int port);
+	std::string					parseCGIResponse(const std::string& cgiOutput);
+	bool						isCGIScript(const std::string& filePath);
+	std::string					handleFileUpload(const std::string& request, Server& server);
 
 	// helper status code
-	std::string POST_303_RESPONSE(const std::string& location, bool setCookie = false);
+	std::string					POST_303_RESPONSE(const std::string& location, bool setCookie = false);
 }
 
 #endif

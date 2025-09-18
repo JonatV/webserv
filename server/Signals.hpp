@@ -5,12 +5,12 @@
 
 class SignalHandler {
 private:
-    static volatile sig_atomic_t _shutdown;
-    static void signalHandler(int signum);
+	static volatile sig_atomic_t	_shutdown;
+	static void						signalHandler(int signum);
 
 public:
-    static void setupSignals();
-    static bool shouldShutdown();
+	static void						setupSignals();
+	static bool						shouldShutdown();
 };
 
 #endif

@@ -3,56 +3,40 @@
 
 std::string method::GET(const std::string& request, int port, Server& server, bool isRegistered)
 {
-	size_t start = request.find("GET") + 4; // 4 is to go after "GET "
+	size_t start = request.find("GET") + 4;
 	size_t end = request.find(" ", start);
 	if (start == std::string::npos || end == std::string::npos) 
 		throw std::runtime_error(ERROR_400_RESPONSE);
-
-	// Cas spécial : register
 	if (request.find("GET /register") != std::string::npos)
 		return (POST_303_RESPONSE("/index.html", true));
 
-	// Extraire le path et séparer la query string
 	std::string fullPath = request.substr(start, end - start);
 	std::string path = fullPath;
 	
-	// *** IMPORTANT: Séparer path et query string pour le matching ***
 	size_t questionMarkPos = fullPath.find('?');
 	if (questionMarkPos != std::string::npos) {
 		path = fullPath.substr(0, questionMarkPos);
-		// La query string sera gérée par handleCGI
 	}
 	
 	const LocationConfig* location = server.matchLocation(path);
 	if (!location)
 		throw std::runtime_error(ERROR_404_RESPONSE);
 
-	// Vérifier les permissions
 	if (checkPermissions("GET", location) == false)
 		throw std::runtime_error(ERROR_403_RESPONSE);
 
-	// Obtenir les informations de la location
 	std::string locationName = location->getLocationName();
 	std::string locationRoot = location->getLocationRoot();
 	std::string locationIndex = location->getLocationIndex();
 
-	// *** VÉRIFICATION CGI EN PREMIER ***
-	// Construire le chemin du fichier AVANT les autres vérifications
 	if (!locationRoot.empty() && !locationIndex.empty())
 	{
 		std::string filePath = locationRoot + locationIndex;
-		
 		// Check if it's a CGI script
 		if (isCGIScript(filePath))
-		{
-			std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mGET CGI request: " << filePath << "\e[0m" << std::endl;
-			return (handleCGI(request, filePath, port)); // *** RETURN ICI - NE PAS CONTINUER ***
-		}
+			return (handleCGI(request, filePath, port));
 	}
 
-	// *** SEULEMENT SI CE N'EST PAS UN CGI, continuer avec les autres vérifications ***
-	
-	// Vérifier si c'est un répertoire avec autoindex
 	if (locationName != "/" && locationName[locationName.length() - 1] == '/') 
 	{
 		if (location->getLocationAutoIndex())
@@ -65,7 +49,7 @@ std::string method::GET(const std::string& request, int port, Server& server, bo
 					lastPath = locationRoot + path.substr(pos + 1);
 				else
 					throw std::runtime_error(ERROR_404_RESPONSE);
-				return (method::foundPage(lastPath, port, isRegistered));
+				return (method::foundPage(lastPath, isRegistered));
 			}
 			return (generateAutoIndexPage(location, isRegistered));
 		}
@@ -75,22 +59,18 @@ std::string method::GET(const std::string& request, int port, Server& server, bo
 		}
 	}
 
-	// *** FICHIER STATIQUE ***
 	if (locationRoot.empty() || locationIndex.empty())
 		throw std::runtime_error(ERROR_500_RESPONSE);
-	
 	std::string filePath = locationRoot + locationIndex;
 	if (!filePath.empty())
-		return (method::foundPage(filePath, port, isRegistered));
+		return (method::foundPage(filePath, isRegistered));
 	else
 		throw std::runtime_error(ERROR_404_RESPONSE);
 }
 
-std::string method::foundPage(const std::string& filepath, int port, bool isRegistered)
+std::string method::foundPage(const std::string& filepath, bool isRegistered)
 {
 	std::ifstream	file(filepath.c_str());
-	(void)port; // dev
-	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mGET request for file: " << filepath << "\e[0m" << std::endl; //dev
 	if (file.is_open())
 	{
 		std::string	textType;
@@ -129,7 +109,6 @@ std::string method::getErrorHtml(int port, const std::string& errorMessage, Serv
 		if (errorCode.length() != 3)
 			errorCode = "500";
 	}
-	// check if the server map error page
 	std::map<int, std::string> errorPages = server.getErrorPages();
 	int errorCodeInt = atoi(errorCode.c_str());
 	if (errorPages.find(errorCodeInt) != errorPages.end())
@@ -167,55 +146,40 @@ std::string method::getErrorHtml(int port, const std::string& errorMessage, Serv
 
 std::string method::POST(const std::string& request, int port, Server &server)
 {
-	// Parse la ligne de requête POST
-	size_t start = request.find("POST") + 5; // 5 = longueur de "POST "
+	size_t start = request.find("POST") + 5;
 	size_t end = request.find(" ", start);
-	
+
 	if (start == std::string::npos || end == std::string::npos) 
 		throw std::runtime_error(ERROR_400_RESPONSE);
-	
+
 	std::string fullPathName = request.substr(start, end - start);
 	std::string pathName = fullPathName;
 	
-	// *** IMPORTANT: Séparer path et query string pour le matching ***
 	size_t questionMarkPos = fullPathName.find('?');
 	if (questionMarkPos != std::string::npos) {
 		pathName = fullPathName.substr(0, questionMarkPos);
 	}
-	
-	// Cas spécial : requête de suppression via POST
+
 	if (request.find("POST /delete") != std::string::npos)
-		return (checkDeleteRequest(port, request, server));
-	
-	// Trouver la location correspondante
+		return (checkDeleteRequest(request, server));
+
 	const LocationConfig* location = server.matchLocation(pathName);
 	if (!location)
 		throw std::runtime_error(ERROR_404_RESPONSE);
-	
-	// Vérifier les permissions POST
+
 	if (checkPermissions("POST", location) == false)
 		throw std::runtime_error(ERROR_403_RESPONSE);
-	
-	// Construire le chemin du fichier
+
 	std::string locationRoot = location->getLocationRoot();
 	std::string locationIndex = location->getLocationIndex();
-	
-	// *** VÉRIFICATION CGI EN PREMIER ***
+
 	if (!locationRoot.empty() && !locationIndex.empty())
 	{
 		std::string filePath = locationRoot + locationIndex;
-		
 		if (isCGIScript(filePath))
-		{
-			std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST CGI request: " << filePath << "\e[0m" << std::endl;
-			return (handleCGI(request, filePath, port)); // *** RETURN ICI - NE PAS CONTINUER ***
-		}
+			return (handleCGI(request, filePath, port));
 	}
-	
-	// *** TRAITEMENT POST CLASSIQUE seulement si ce n'est pas du CGI ***
-	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST request for: " << pathName << "\e[0m" << std::endl;
-	
-	// Vérifier la limite de taille du body
+
 	std::string contentLengthHeader;
 	size_t contentLengthPos = request.find("Content-Length: ");
 	if (contentLengthPos != std::string::npos)
@@ -224,48 +188,23 @@ std::string method::POST(const std::string& request, int port, Server &server)
 		if (lineEnd != std::string::npos)
 		{
 			contentLengthHeader = request.substr(contentLengthPos + 16, lineEnd - contentLengthPos - 16);
-			// ssize_t contentLength = std::atoi(contentLengthHeader.c_str()); //wip
-			
-			// if (contentLength > server.getClientBodyLimit()) //wip
-			// { //wip
-			// 	std::cout << "\e[31m[" << port << "]\e[0m\t" << "Request body too large: "  //wip
-			// 			  << contentLength << " > " << server.getClientBodyLimit() << std::endl; //wip
-			// 	std::cout << "\e[31mDebug simple POST \e[0m" << std::endl; //wip
-			// 	throw std::runtime_error(ERROR_413_RESPONSE); //wip
-			// } //wip
+			ssize_t contentLength = atoi(contentLengthHeader.c_str());
+			if (contentLength > server.getClientBodyLimit())
+				throw std::runtime_error(ERROR_413_RESPONSE);
 		}
 	}
-	
-	// Déterminer le type de requête POST
 	if (request.find("User-Agent: curl") != std::string::npos)
-	{
-		// POST depuis terminal/curl
 		return (postFromTerminal(request, server));
-	}
 	else if (request.find("Content-Type: multipart/form-data") != std::string::npos)
-	{
-		// Upload de fichier
-		return (handleFileUpload(request, server, port));
-	}
+		return (handleFileUpload(request, server));
 	else if (request.find("Content-Type: application/x-www-form-urlencoded") != std::string::npos)
-	{
-		// Formulaire HTML standard
 		return (postFromDashboard(request, server));
-	}
 	else
-	{
-		// Fallback : traiter comme formulaire simple
-		std::cout << "\e[33m[" << port << "]\e[0m\t" << "Unknown POST content type, treating as form" << std::endl;
 		return (postFromDashboard(request, server));
-	}
 }
 
-// Fonction helper pour gérer l'upload de fichiers
-std::string method::handleFileUpload(const std::string& request, Server& server, int port)
+std::string method::handleFileUpload(const std::string& request, Server& server)
 {
-	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mFile upload request\e[0m" << std::endl;
-	
-	// Extraire le boundary du Content-Type
 	std::string boundary;
 	size_t boundaryPos = request.find("boundary=");
 	if (boundaryPos != std::string::npos)
@@ -275,34 +214,19 @@ std::string method::handleFileUpload(const std::string& request, Server& server,
 	}
 	
 	if (boundary.empty())
-	{
-		std::cout << "\e[31m[" << port << "]\e[0m\t" << "No boundary found in multipart request" << std::endl;
 		throw std::runtime_error(ERROR_400_RESPONSE);
-	}
-	
-	// Pour une implémentation complète de multipart/form-data, il faudrait parser
-	// chaque partie séparément. Ici on fait une version simplifiée.
-	
-	// Extraire le body
 	size_t bodyStart = request.find("\r\n\r\n");
 	if (bodyStart == std::string::npos)
 		throw std::runtime_error(ERROR_400_RESPONSE);
 	
 	std::string body = request.substr(bodyStart + 4);
-	
-	// Vérifier la taille
 	if ((ssize_t)body.length() > server.getClientBodyLimit())
-	{
-		std::cout << "\e[31mDebug in handleFileUpload \e[0m" << std::endl;
 		throw std::runtime_error(ERROR_413_RESPONSE);
-	}
-	
-	// Générer un nom de fichier unique
+
 	std::string fileName = UPLOAD_PATH + to_string(time(0)) + "_upload.txt";
 	while (std::ifstream(fileName.c_str()))
 		fileName = UPLOAD_PATH + to_string(time(0)) + "_upload.txt";
 	
-	// Sauvegarder (version simplifiée - dans un vrai serveur, il faudrait parser le multipart)
 	std::ofstream file(fileName.c_str());
 	if (file.is_open())
 	{
@@ -312,19 +236,14 @@ std::string method::handleFileUpload(const std::string& request, Server& server,
 		file << "=== Raw content ===" << std::endl;
 		file << body;
 		file.close();
-		
-		std::cout << "\e[32m[" << port << "]\e[0m\t" << "File uploaded: " << fileName << std::endl;
 		return (POST_201_RESPONSE);
 	}
 	else
-	{
 		throw std::runtime_error(ERROR_500_RESPONSE);
-	}
 }
 
-std::string method::checkDeleteRequest(int port, const std::string &request, Server &server)
+std::string method::checkDeleteRequest(const std::string &request, Server &server)
 {
-	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mPOST request for delete\e[0m" << std::endl;
 	std::string lastPart;
 	size_t refererStart = request.find("Referer: ");
 	size_t refererEnd = request.find("\r\n", refererStart);
@@ -339,10 +258,7 @@ std::string method::checkDeleteRequest(int port, const std::string &request, Ser
 			throw std::runtime_error(ERROR_400_RESPONSE);
 	}
 	else
-	{
-		std::cout << "\e[31m[" << port << "]\e[0m\t" << "\e[2mNo referer found in POST request\e[0m" << std::endl;
 		throw std::runtime_error(ERROR_400_RESPONSE);
-	}
 	const LocationConfig *location = server.matchLocation(lastPart);
 	if (!location)
 		throw std::runtime_error(ERROR_404_RESPONSE);
@@ -359,12 +275,7 @@ std::string method::postFromTerminal(const std::string &request, Server &server)
 
 	ssize_t bytesReceived = body.length();
 	if (bytesReceived > server.getClientBodyLimit())
-	{
-		std::cout << "\e[31mDebug POSTFROMTERMINAL \e[0m" << std::endl;
 		throw std::runtime_error(ERROR_413_RESPONSE);
-	}
-
-	// Déterminer l'extension selon le Content-Type
 	std::string extension = ".txt";
 	if (request.find("Content-Type: application/json") != std::string::npos)
 		extension = ".json";
@@ -383,7 +294,6 @@ std::string method::postFromTerminal(const std::string &request, Server &server)
 		file << body;
 		file.close();
 		
-		// Réponse avec plus d'informations
 		std::string response = 
 			"HTTP/1.1 201 Created\r\n"
 			"Content-Type: application/json\r\n"
@@ -404,17 +314,14 @@ std::string method::postFromDashboard(const std::string &request, Server &server
 	if (request.find("User-Agent: curl") != std::string::npos)
 		return postFromTerminal(request, server);
 
-	// Extraire le body
 	std::string body = request.substr(request.find("\r\n\r\n") + 4);
 	std::string content = "";
 	
-	// Parser les données de formulaire
 	size_t msgStart = body.find("MSG_TEXTAREA=");
 	if (msgStart != std::string::npos)
 	{
 		content = body.substr(msgStart + std::string("MSG_TEXTAREA=").length());
 		
-		// Décoder URL encoding basique
 		size_t plusPos = 0;
 		while ((plusPos = content.find("+", plusPos)) != std::string::npos)
 		{
@@ -422,7 +329,6 @@ std::string method::postFromDashboard(const std::string &request, Server &server
 			plusPos++;
 		}
 		
-		// Gérer %20, %0A, etc. (version simplifiée)
 		size_t percentPos = 0;
 		while ((percentPos = content.find("%", percentPos)) != std::string::npos)
 		{
@@ -439,20 +345,9 @@ std::string method::postFromDashboard(const std::string &request, Server &server
 		}
 	}
 	else
-	{
 		content = body; // Fallback
-	}
-
-	// ssize_t bytesReceived = content.length(); //wip
-	// if (bytesReceived > server.getClientBodyLimit()) //wip
-	// { //wip
-	// 	std::cout << "\e[31mDebug POSTFROMDASHBOARD \e[0m" << std::endl; //wip
-	// 	throw std::runtime_error(ERROR_413_RESPONSE); //wip
-	// } //wip
-
 	if (content.empty())
 	{
-		// Rediriger vers la page methods avec un message d'erreur
 		return (
 			"HTTP/1.1 303 See Other\r\n"
 			"Content-Type: text/html\r\n"
@@ -460,7 +355,6 @@ std::string method::postFromDashboard(const std::string &request, Server &server
 			"Location: /methods.html?error=empty\r\n"
 			"\r\n");
 	}
-
 	std::string fileName = UPLOAD_PATH + to_string(time(0)) + ".txt";
 	while (std::ifstream(fileName.c_str()))
 		fileName = UPLOAD_PATH + to_string(time(0)) + ".txt";
@@ -533,7 +427,7 @@ std::string method::trimFileName(std::string str)
 	return (str.substr(start, end - start));
 }
 
-std::string method::DELETE(const std::string& request, int port, Server &server)
+std::string method::DELETE(const std::string& request, Server &server)
 {
 	std::string filePath;
 	size_t start = request.find("DELETE") + 7;
@@ -554,7 +448,6 @@ std::string method::DELETE(const std::string& request, int port, Server &server)
 	if (!file.is_open())
 		throw std::runtime_error(ERROR_404_RESPONSE);
 	file.close();
-	std::cout << "\e[34m[" << port << "]\e[0m\t" << "\e[32mDELETE request for file: " << filePath << "\e[0m" << std::endl;
 	if (std::remove(filePath.c_str()) == 0)
 		return (DELETE_200_RESPONSE);
 	else
@@ -566,10 +459,7 @@ std::vector<std::string> method::listFiles(const char* path)
 	std::vector<std::string> files = std::vector<std::string>();
 	DIR *dir = opendir(path);
 	if (dir == NULL)
-	{
-		std::cerr << "Error opening directory: " << path << " for listing files." << std::endl; // wip refactor error msg
 		throw std::runtime_error(ERROR_500_RESPONSE);
-	}
 	struct dirent *current_entry;
 	while ((current_entry = readdir(dir)))
 	{
@@ -581,10 +471,7 @@ std::vector<std::string> method::listFiles(const char* path)
 		}
 	}
 	if (closedir(dir) == -1)
-	{
-		std::cerr << "Error closing directory: " << path << std::endl; // wip refactor error msg
 		throw std::runtime_error(ERROR_500_RESPONSE);
-	}
 	return (files);
 }
 
@@ -596,7 +483,7 @@ std::string method::generateMethodsPage(bool isRegistered)
 	{
 		std::string content = gnl(file, isRegistered);
 		std::vector<std::string> allFiles = listFiles(UPLOAD_PATH);
-		std::string htmlList = generaleListCheckHtml(allFiles, UPLOAD_PATH);
+		std::string htmlList = generateListCheckHtml(allFiles, UPLOAD_PATH);
 		size_t pos = content.find("<span>No file yet</span>");
 		if (pos != std::string::npos)
 			content.replace(pos, 24, htmlList);
@@ -612,7 +499,7 @@ std::string method::generateMethodsPage(bool isRegistered)
 		throw std::runtime_error(ERROR_404_RESPONSE);
 }
 
-std::string method::generaleListCheckHtml(std::vector<std::string> allFiles, const std::string& path)
+std::string method::generateListCheckHtml(std::vector<std::string> allFiles, const std::string& path)
 {
 	std::string fullList = "";
 
@@ -631,7 +518,7 @@ std::string method::generaleListCheckHtml(std::vector<std::string> allFiles, con
 		if (currentFile.is_open())
 		{
 			char tempBuffer[31] = {0};
-			currentFile.read(tempBuffer, 30); // i am not using gnl here because i want to limit the size of the content
+			currentFile.read(tempBuffer, 30);
 			buffer = std::string(tempBuffer);
 			currentFile.close();
 			fullList +=
@@ -644,10 +531,7 @@ std::string method::generaleListCheckHtml(std::vector<std::string> allFiles, con
 				"</li>";
 		}
 		else
-		{
-			std::cerr << "Error opening file: " << *it << std::endl; // wip refactor error msg
 			throw std::runtime_error(ERROR_500_RESPONSE);
-		}
 	}
 	fullList +=
 		"</ul>"
@@ -705,9 +589,7 @@ std::string method::generateListHrefHtml(std::vector<std::string> allFiles)
 std::string method::POST_303_RESPONSE(const std::string& location, bool setCookie) {
 	if (setCookie)
 	{
-		// create a cookie string
 		std::string cookieId = cookies::generateCookieId();
-		std::cout << "\033[31m" << "========= cookies id: " << cookieId << "\033[0m" << std::endl;
 		return (
 			"HTTP/1.1 303 See Other\r\n"
 			"Content-Type: text/html\r\n"
@@ -979,17 +861,14 @@ std::string method::parseCGIResponse(const std::string& cgiOutput) {
 
 bool method::isCGIScript(const std::string& filePath)
 {
-	// Check by extension
 	if (filePath.find(".py") != std::string::npos) return true;
 	if (filePath.find(".sh") != std::string::npos) return true;
 	if (filePath.find(".pl") != std::string::npos) return true;
 	if (filePath.find(".cgi") != std::string::npos) return true;
 	
-	// Check if file is executable
 	struct stat statbuf;
-	if (stat(filePath.c_str(), &statbuf) == 0) {
-		return (statbuf.st_mode & S_IXUSR); // Executable by owner
-	}
+	if (stat(filePath.c_str(), &statbuf) == 0)
+		return (statbuf.st_mode & S_IXUSR);
 	
 	return false;
 }

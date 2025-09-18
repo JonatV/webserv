@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 15:55:05 by jveirman          #+#    #+#             */
-/*   Updated: 2025/09/17 12:07:42 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/18 14:16:20 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 
 WebServer::WebServer(Config& configFile)
 {
-	std::cout << "\e[2mCreating WebServer object\e[0m" << std::endl;
+	logs::msg(NOPORT, logs::Blue, "Creating WebServer object", true);
 	Evaluator evaluator;
 	initServers(configFile);
 }
@@ -32,32 +32,24 @@ WebServer::~WebServer()
 		close(it->first);
 	}
 	_fdsToServer.clear();
-	std::cout << "\e[2mDestroying WebServer object\e[0m" << std::endl;
 }
 
-void WebServer::shutdown()
+void	WebServer::shutdown()
 {
-	std::cout << "\e[2mInitiating graceful shutdown...\e[0m" << std::endl;
-	
-	// Close all client connections and server sockets
+	logs::msg(NOPORT, logs::Blue, "Initiating shutdown...", true);
 	for (size_t i = 0; i < _servers.size(); i++)
 	{
-		if (_servers[i]) {
-			_servers[i]->shutdown();  // We'll need to implement this in Server class
-		}
+		if (_servers[i])
+			_servers[i]->shutdown();
 	}
-	
-	// Close all file descriptors in the map
 	for (std::map<int, Server*>::iterator it = _fdsToServer.begin(); it != _fdsToServer.end(); ++it) {
 		close(it->first);
 	}
 	_fdsToServer.clear();
-	
-	std::cout << "\e[32mGraceful shutdown completed.\e[0m" << std::endl;
+	logs::msg(NOPORT, logs::Green, "Shutdown completed.", true);
 }
 
-
-void WebServer::initServers(Config &config)
+void	WebServer::initServers(Config &config)
 {
 	for (size_t i = 0; i < config._servers.size(); i++)
 	{
@@ -66,9 +58,9 @@ void WebServer::initServers(Config &config)
 }
 
 
-void WebServer::start()
+void	WebServer::start()
 {
-	std::cout << "\e[2mStarting WebServer\e[0m" << std::endl;
+	logs::msg(NOPORT, logs::Blue, "Starting WebServer", true);
 	// Create the servers
 	int sharedEpollFd = epoll_create1(0);
 	if (sharedEpollFd == -1)
@@ -76,7 +68,6 @@ void WebServer::start()
 		CERR_MSG("____", "Failed to create epoll fd");
 		return;
 	}
-	// Initialize each server and add its sockets to the epoll instance
 	for ( size_t i = 0; i < _servers.size(); i++ )
 	{
 		_servers[i]->setEpollFd(sharedEpollFd);
@@ -86,15 +77,14 @@ void WebServer::start()
 		}
 		catch (const std::runtime_error& e)
 		{
-			std::cout << e.what() << std::endl;
-			continue; // Skip this server and proceed with the next
+			logs::msg(NOPORT, logs::Red, e.what(), true);
+			continue;
 		}
-		// add the server to the main socket table (every ports of every servers)
 		const std::vector<int>& serverFds = _servers[i]->getServerSocketFds();
 		for (size_t j = 0; j < serverFds.size(); j++)
 			_fdsToServer[serverFds[j]] = _servers[i];
 	}
-	// check if no server was created
+	// check if no server created
 	bool hasRunningPorts = false;
 	for (size_t i = 0; i < _servers.size(); i++)
 	{
@@ -106,39 +96,27 @@ void WebServer::start()
 	}
 	if (!hasRunningPorts)
 	{
-		CERR_MSG("____", "No server was created");
+		CERR_MSG("____", "No server created");
 		close(sharedEpollFd);
 		return;
 	}
-	// accept incoming connections continuously. This is the main loop of the webserver
 	evenLoop(sharedEpollFd);
 }
 
-void WebServer::evenLoop(int sharedEpollFd)
+void	WebServer::evenLoop(int sharedEpollFd)
 {
 	struct epoll_event events[MAX_QUEUE];
 	try {
-		while (!SignalHandler::shouldShutdown())  // Check shutdown flag
+		while (!SignalHandler::shouldShutdown())
 		{
-			// Use timeout in epoll_wait to check shutdown signal periodically
-			int numEvents = epoll_wait(sharedEpollFd, events, MAX_QUEUE, 1000); // 1 second timeout
+			int numEvents = epoll_wait(sharedEpollFd, events, MAX_QUEUE, 2000);
 			
-			if (SignalHandler::shouldShutdown()) {
-				std::cout << "Shutdown signal received. Closing server..." << std::endl;
+			if (SignalHandler::shouldShutdown())
 				break;
-			}
-			
 			if (numEvents == -1)
-			{
-				close(sharedEpollFd);
 				THROW_MSG("____", "Epoll wait failed");
-			}
-			
-			if (numEvents == 0) {
-				// Timeout occurred, continue to check shutdown flag
+			if (numEvents == 0)
 				continue;
-			}
-			
 			for (int i = 0; i < numEvents; i++)
 			{
 				Server* server = _fdsToServer[events[i].data.fd];
@@ -151,8 +129,6 @@ void WebServer::evenLoop(int sharedEpollFd)
 					int clientPort = server->getClientPort(events[i].data.fd);
 					if (clientPort == -1)
 					{
-						// Client doesn't exist anymore, clean up the file descriptor
-						std::cout << "\e[33m[" << server->getPort() << "]\e[0m\t" << "Client port not found for fd " << events[i].data.fd << ", cleaning up" << std::endl; //dev
 						server->closeClient(events[i], server->getPort());
 						continue;
 					}
@@ -160,16 +136,8 @@ void WebServer::evenLoop(int sharedEpollFd)
 						server->closeClient(events[i], clientPort);
 					else {
 						int retValue = server->treatMethod(events[i], clientPort);
-						std::cout << "\e[36m[" << clientPort << "]\e[0m\t" << "treatMethod returned: " << retValue << std::endl; //dev
-						
-						// Handle disconnection based on return value
-						if (retValue == 0) {
-							std::cout << "\e[36m[" << clientPort << "]\e[0m\t" << "Client disconnected, closing connection" << std::endl; //dev
+						if (retValue == 0 || retValue == -1)
 							server->closeClient(events[i], clientPort);
-						} else if (retValue == -1) {
-							std::cout << "\e[31m[" << clientPort << "]\e[0m\t" << "Error in treatMethod, closing connection" << std::endl; //dev
-							server->closeClient(events[i], clientPort);
-						}
 					}
 				}
 			}
@@ -177,26 +145,18 @@ void WebServer::evenLoop(int sharedEpollFd)
 	}
 	catch (const std::exception& e)
 	{
-		close(sharedEpollFd);
+		logs::msg(NOPORT, logs::Red, e.what(), true);
 	}
-	
-	// Perform graceful shutdown
 	shutdown();
 	close(sharedEpollFd);
 }
 
-void WebServer::registerClientFd(int fd, Server* server)
+void	WebServer::registerClientFd(int fd, Server* server)
 {
 	_fdsToServer[fd] = server;
 }
 
-void WebServer::unregisterClientFd(int fd)
+void	WebServer::unregisterClientFd(int fd)
 {
 	_fdsToServer.erase(fd);
-}
-
-// error handling
-const char *WebServer::err_404::what() const throw()
-{
-	return ("Error 404: Not Found");
 }

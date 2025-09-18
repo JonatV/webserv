@@ -3,24 +3,14 @@
 void cookies::cookTheCookies(char buffer[], Client *client)
 {
 	std::string request(buffer);
-	// check if the its a unregistered client
 	if (client->getIsRegisteredCookies())
 		return ;
-	// check if the request is a GET
 	if (request.find("GET") == std::string::npos)
 		return ;
-	// check if the header has a cookie
 	if (!parseCookieHeader(request, client))
 		return ;
-	// print the cookies
-	std::map<std::string, std::string> cookies = client->getCookies();
-	std::cout << "\e[34m[" << client->getClientPort() << "]\e[0m\t" << "\e[32mCookies received: \n";
-	for (std::map<std::string, std::string>::iterator it = cookies.begin(); it != cookies.end(); ++it)
-		std::cout << "\t" << it->first << " : " << it->second << "\e[0m" << std::endl;
-	// check the cookies values
 	if (!checkCookies(client->getCookies()))
 		throw std::runtime_error(ERROR_400_RESPONSE);
-	// set the client as registered
 	client->setRegistered(true);
 }
 
@@ -61,7 +51,6 @@ bool	cookies::parseCookieHeader(std::string request, Client *client)
 			cookies[cookieName] = cookieValue;
 		}
 	}
-	// push the cookies in the client
 	client->setCookies(cookies);
 	return (true);
 }
@@ -76,7 +65,6 @@ bool cookies::checkCookies(std::map<std::string, std::string> cookies)
 		if (it->first != "session-id")
 			return (false);
 	}
-	// check the session-id value
 	if (cookies["session-id"].empty())
 		return (false);
 	if (cookies["session-id"].length() != 10)
@@ -88,7 +76,6 @@ bool cookies::checkCookies(std::map<std::string, std::string> cookies)
 
 std::string cookies::generateCookieId()
 {
-	// generate a random cookie id of 10 digits
 	std::string cookieId;
 	for (int i = 0; i < 10; ++i)
 		cookieId += '0' + (rand() % 10);

@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:12:55 by jveirman          #+#    #+#             */
-/*   Updated: 2025/09/18 10:18:36 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/18 14:00:32 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,15 +18,13 @@ Client::Client(int clientSocketFd, struct sockaddr_in clientSocketId, int server
 	  _parsed(false), _keepAlive(false), _headersComplete(false), _hasContentLength(false),
 	  _expectedContentLength(0), _receivedContentLength(0), _bodyComplete(false), _cookies()
 {
-	std::cout << "\e[34m[" << _serverPort << "]\e[0m\t" << "\e[2mCreating Client object\e[0m" << std::endl;
 	inet_ntop(AF_INET, &_clientSocketId.sin_addr, _clientIp, INET_ADDRSTRLEN);
 }
+
 Client::~Client()
 {
 	close(_clientSocketFd);
-	std::cout << "\e[2mClient " << _clientIp << " disconnected\e[0m" << std::endl;
 }
-
 
 /*
 ┌───────────────────────────────────┐
@@ -96,7 +94,7 @@ std::string							Client::getResponse() const {
 	return (_response);
 }
 
-size_t	Client::getBytesSent() const {
+size_t								Client::getBytesSent() const {
 	return _bytesSent;
 }
 
@@ -109,55 +107,55 @@ size_t								Client::getReceivedContentLength() const {
 │              SETTER               │
 └───────────────────────────────────┘
 */
-void	Client::setRegistered(bool registered) {
+void								Client::setRegistered(bool registered) {
 	_isRegisteredCookies = registered;
 }
 
-void	Client::setCookies(std::map<std::string, std::string> cookies) {
+void								Client::setCookies(std::map<std::string, std::string> cookies) {
 	_cookies = cookies;
 }
 
-void	Client::setState(State state) {
+void								Client::setState(State state) {
 	_state = state;
 }
 
-void	Client::setHeadersComplete(bool complete) {
+void								Client::setHeadersComplete(bool complete) {
 	_headersComplete = complete;
 }
 
-void	Client::setExpectedContentLength(size_t length) {
+void								Client::setExpectedContentLength(size_t length) {
 	_expectedContentLength = length;
 }
 
-void	Client::setHasContentLength(bool hasContentLength) {
+void								Client::setHasContentLength(bool hasContentLength) {
 	_hasContentLength = hasContentLength;
 }
 
-void	Client::setKeepAlive(bool keepAlive) {
+void								Client::setKeepAlive(bool keepAlive) {
 	_keepAlive = keepAlive;
 }
 
-void	Client::setParsed(bool parsed) {
+void								Client::setParsed(bool parsed) {
 	_parsed = parsed;
 }
 
-void	Client::setBodyComplete(bool complete) {
+void								Client::setBodyComplete(bool complete) {
 	_bodyComplete = complete;
 }
 
-void	Client::setResponse(const std::string& response) {
+void								Client::setResponse(const std::string& response) {
 	_response = response;
 }
 
-void	Client::setBytesSent(size_t bytes) {
+void								Client::setBytesSent(size_t bytes) {
 	_bytesSent = bytes;
 }
 
-void	Client::setReceivedContentLength(size_t bytes) {
+void								Client::setReceivedContentLength(size_t bytes) {
 	_receivedContentLength = bytes;
 }
 
-void	Client::resetForNewRequest() {
+void								Client::resetForNewRequest() {
 	_requestBuffer.clear();
 	_response.clear();
 	_state = READING_HEADERS;

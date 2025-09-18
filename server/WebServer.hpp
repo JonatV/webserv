@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/08/16 16:06:35 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/18 13:59:38 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,23 +38,16 @@ class WebServer
 		std::vector<Server *>	_servers;
 		std::map<int, Server *>	_fdsToServer;
 	public:
+		// Generic
 		WebServer(Config &);
 		~WebServer();
-		void start();
-		void shutdown();
-
-		void initServers(Config &config);
-		void evenLoop(int sharedEpollFd);
-		void registerClientFd(int fd, Server* server);
-		void unregisterClientFd(int fd);
-		
-		// error handling
-		class err_404 : public std::exception
-		{
-			public:
-				const char *what() const throw();
-		};
-		
+		// methods
+		void					start();
+		void					shutdown();
+		void					initServers(Config &config);
+		void					evenLoop(int sharedEpollFd);
+		void					registerClientFd(int fd, Server* server);
+		void					unregisterClientFd(int fd);
 };
 
 #endif

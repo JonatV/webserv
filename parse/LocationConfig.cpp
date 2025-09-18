@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/08/12 17:28:03 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/09/18 13:20:20 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -131,7 +131,6 @@ std::string *LocationConfig::getRoot(std::vector<std::string> tokens, size_t i) 
 		throw ConfigException(ERROR_INVALID_ROOT_PATH); // Missing semicolon
 	}
 
-	std::cout << path << std::endl;
 	// Check if path is a directory and accessible
 	struct stat path_stat;
 	if (stat(path.c_str(), &path_stat) != 0) {
