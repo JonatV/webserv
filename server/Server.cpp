@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/09/17 15:38:14 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/09/18 11:11:09 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,24 +120,24 @@ int Server::handleReadEvent(Client* client, int clientPort)
 		return bytesRead;
 	buffer[bytesRead] = '\0';
 	client->appendToRequestBuffer(buffer);
-		if (client->getState() == Client::READING_HEADERS)
-		{
-			handleReadHeaders(client);
-			if (client->getState() == Client::READING_BODY)
+	if (client->getState() == Client::READING_HEADERS)
+	{
+		handleReadHeaders(client);
+		if (client->getState() == Client::READING_BODY)
 			handleReadBody(client);
-			if (client->getState() == Client::READY_TO_RESPOND)
+		if (client->getState() == Client::READY_TO_RESPOND)
 			handleReadyToRespond(client, buffer, clientPort);
 		
-		}
-		else if (client->getState() == Client::READING_BODY)
-		{
-			handleReadBody(client);
-			if (client->getState() == Client::READY_TO_RESPOND)
+	}
+	else if (client->getState() == Client::READING_BODY)
+	{
+		handleReadBody(client);
+		if (client->getState() == Client::READY_TO_RESPOND)
 			handleReadyToRespond(client, buffer, clientPort);
-		}
-		else if (client->getState() == Client::READY_TO_RESPOND)
-		{
-			handleReadyToRespond(client, buffer, clientPort);
+	}
+	else if (client->getState() == Client::READY_TO_RESPOND)
+	{
+		handleReadyToRespond(client, buffer, clientPort);
 	}
 	return 1;
 }
@@ -158,16 +158,19 @@ void Server::handleReadBody(Client* client)
 	size_t bodyStartPos = headerEndPos + 4;
 	size_t totalBufferSize = client->getRequestBuffer().size();
 	
-	std::cout << "Checker body read" << std::endl;
-	
 	if (totalBufferSize > bodyStartPos) {
 		size_t currentBodySize = totalBufferSize - bodyStartPos;
 		size_t expectedBodySize = client->getExpectedContentLength();
-		std::cout << "Checker informations: " << currentBodySize << " | " << expectedBodySize << std::endl;
+		std::cout << "\e[2mChecker informations: " << currentBodySize << " | " << expectedBodySize << "\e[0m" << std::endl;
 		if (currentBodySize >= expectedBodySize) {
 			client->setBodyComplete(true);
 			client->setParsed(true);
 			client->setState(Client::READY_TO_RESPOND);
+		}
+		else {
+			client->setReceivedContentLength(currentBodySize);
+			client->setState(Client::READING_BODY);
+			std::cout << "Body not complete yet: " << currentBodySize << " / " << expectedBodySize << std::endl;
 		}
 	}
 }
@@ -189,19 +192,6 @@ void Server::handleReadyToRespond(Client* client, char* buffer, int clientPort)
 		client->setState(Client::WRITING_RESPONSE);
 		client->setKeepAlive(false);
 		switchToWriteMode(client->getClientSocketFd(), clientPort);
-	}
-}
-
-void Server::parseRequestHeaders(Client* client)
-{
-	std::string request = client->getRequestBuffer();
-	parseContentLength(request, client);
-	parseKeepAlive(request, client);
-	if (client->getHasContentLength()) {
-		client->setState(Client::READING_BODY);
-	} else {
-		client->setState(Client::READY_TO_RESPOND);
-		client->setParsed(true);
 	}
 }
 
@@ -406,37 +396,6 @@ const LocationConfig* Server::matchLocation(std::string& path)
 	return (NULL);
 }
 
-int	Server::getClientPort(int fd)
-{
-	Client *client = _clients[fd];
-	if (!client)
-		return (-1);
-	return (client->getClientPort());
-}
-
-void Server::shutdown()
-{
-	COUT_MSG(getPort(), "Shutting down server...");
-	
-	// Close all client connections
-	for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); ++it)
-	{
-		if (it->second) {
-			COUT_MSG(it->second->getClientPort(), "Closing client connection");
-			close(it->first);  // Close client socket
-		}
-	}
-	
-	// Close all server sockets
-	for (size_t i = 0; i < _serverSocketFds.size(); i++)
-	{
-		COUT_MSG(_ports[i], "Closing server socket");
-		close(_serverSocketFds[i]);
-	}
-	
-	COUT_MSG(getPort(), "Server shutdown complete");
-}
-
 Server::~Server()
 {
 	for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); ++it)
@@ -487,6 +446,14 @@ std::map<int, Client *> Server::getClients() const
 	return (_clients);
 }
 
+int	Server::getClientPort(int fd)
+{
+	Client *client = _clients[fd];
+	if (!client)
+		return (-1);
+	return (client->getClientPort());
+}
+
 /*
 ┌───────────────────────────────────┐
 │              SETTER               │
@@ -503,6 +470,19 @@ void Server::setEpollFd(int epollFd)
 │              PARSER               │
 └───────────────────────────────────┘
 */
+
+void Server::parseRequestHeaders(Client* client)
+{
+	std::string request = client->getRequestBuffer();
+	parseContentLength(request, client);
+	parseKeepAlive(request, client);
+	if (client->getHasContentLength()) {
+		client->setState(Client::READING_BODY);
+	} else {
+		client->setState(Client::READY_TO_RESPOND);
+		client->setParsed(true);
+	}
+}
 
 void	Server::parseContentLength(const std::string& request, Client* client)
 {
@@ -575,4 +555,27 @@ void Server::switchToReadMode(int clientSocketFd, int clientPort)
 	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientSocketFd, &readEvent) == -1) {
 		throw std::runtime_error(ERROR_500_RESPONSE);
 	}
+}
+
+void Server::shutdown()
+{
+	COUT_MSG(getPort(), "Shutting down server...");
+	
+	// Close all client connections
+	for (std::map<int, Client *>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+	{
+		if (it->second) {
+			COUT_MSG(it->second->getClientPort(), "Closing client connection");
+			close(it->first);  // Close client socket
+		}
+	}
+	
+	// Close all server sockets
+	for (size_t i = 0; i < _serverSocketFds.size(); i++)
+	{
+		COUT_MSG(_ports[i], "Closing server socket");
+		close(_serverSocketFds[i]);
+	}
+	
+	COUT_MSG(getPort(), "Server shutdown complete");
 }
