@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/09/18 13:54:40 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/18 14:51:03 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,7 +74,6 @@ class Client
 		└───────────────────────────────────┘
 		*/
 		int				getClientSocketFd() const;
-		const char*		getClientIp() const;
 		int				getClientPort() const;
 		bool			getIsRegisteredCookies() const;
 		std::map<std::string, std::string> getCookies() const;
@@ -85,8 +84,6 @@ class Client
 		bool			getKeepAlive() const;
 		bool			getParsed() const;
 		std::string		getResponse() const;
-		size_t			getBytesSent() const;
-		size_t			getReceivedContentLength() const;
 
 		/*
 		┌───────────────────────────────────┐
@@ -104,7 +101,6 @@ class Client
 		void			setBodyComplete(bool complete);
 		void			setResponse(const std::string& response);
 		void			setBytesSent(size_t bytes);
-		void			setReceivedContentLength(size_t bytes);
 };
 
 #endif

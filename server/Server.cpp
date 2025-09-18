@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:16:47 by jveirman          #+#    #+#             */
-/*   Updated: 2025/09/18 14:23:14 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/18 14:51:25 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -148,7 +148,6 @@ void Server::handleReadBody(Client* client)
 			client->setState(Client::READY_TO_RESPOND);
 		}
 		else {
-			client->setReceivedContentLength(currentBodySize);
 			client->setState(Client::READING_BODY);
 		}
 	}
@@ -366,11 +365,6 @@ std::map<int, std::string> Server::getErrorPages() const
 ssize_t Server::getClientBodyLimit() const
 {
 	return (_clientBodyLimit);
-}
-
-std::map<int, Client *> Server::getClients() const
-{
-	return (_clients);
 }
 
 int	Server::getClientPort(int fd)

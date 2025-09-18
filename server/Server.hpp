@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/09/18 13:57:25 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/18 14:51:22 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,7 +97,6 @@ class Server
 		std::vector<int>						getRunningPorts() const;
 		std::map<int, std::string>				getErrorPages() const;
 		ssize_t									getClientBodyLimit() const;
-		std::map<int, Client *>					getClients() const;
 		// setters
 		void									setEpollFd(int epollFd);
 };

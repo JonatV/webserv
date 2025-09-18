@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 17:12:55 by jveirman          #+#    #+#             */
-/*   Updated: 2025/09/18 14:00:32 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/18 14:51:01 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,10 +50,6 @@ int									Client::getClientSocketFd() const {
 	return (_clientSocketFd);
 }
 
-const char*							Client::getClientIp() const {
-	return (_clientIp);
-}
-
 int									Client::getClientPort() const {
 	return (_serverPort);
 }
@@ -92,14 +88,6 @@ bool								Client::getParsed() const {
 
 std::string							Client::getResponse() const {
 	return (_response);
-}
-
-size_t								Client::getBytesSent() const {
-	return _bytesSent;
-}
-
-size_t								Client::getReceivedContentLength() const {
-	return (_receivedContentLength);
 }
 
 /*
@@ -149,10 +137,6 @@ void								Client::setResponse(const std::string& response) {
 
 void								Client::setBytesSent(size_t bytes) {
 	_bytesSent = bytes;
-}
-
-void								Client::setReceivedContentLength(size_t bytes) {
-	_receivedContentLength = bytes;
 }
 
 void								Client::resetForNewRequest() {
