@@ -114,44 +114,30 @@ int	Server::treatMethod(struct epoll_event &event, int clientPort)
 
 int Server::handleReadEvent(Client* client, int clientPort)
 {
-	char buffer[100000];
+	char buffer[BUFFER_LENGTH];
 	ssize_t bytesRead = recv(client->getClientSocketFd(), buffer, sizeof(buffer) - 1, 0);
 	if (bytesRead == -1 || bytesRead == 0)
 		return bytesRead;
 	buffer[bytesRead] = '\0';
 	client->appendToRequestBuffer(buffer);
-	if (!(client->getRequestBuffer().find("/style/style.css") != std::string::npos || client->getRequestBuffer().find("/favicon.ico") != std::string::npos))
-	{
-		std::cout << "\e[32m[" << clientPort << "]\e[0m\t" << "Received " << bytesRead << " bytes" << std::endl; //dev
-		std::cout << "\e[34m[" << clientPort << "]\e[0m\t" << "\e[32mRequest received: \n" << buffer << "\e[0m" << std::endl; //dev
-	}
-	while (true) {
-		std::cout << "\e[33m[" << clientPort << "]\e[0m\t" << "Cycle through loop: Client state: ";
-		std::cout << client->getState() << std::endl; //dev
 		if (client->getState() == Client::READING_HEADERS)
 		{
 			handleReadHeaders(client);
 			if (client->getState() == Client::READING_BODY)
-				continue;
+			handleReadBody(client);
 			if (client->getState() == Client::READY_TO_RESPOND)
-				continue;
-			break;
+			handleReadyToRespond(client, buffer, clientPort);
+		
 		}
 		else if (client->getState() == Client::READING_BODY)
 		{
 			handleReadBody(client);
 			if (client->getState() == Client::READY_TO_RESPOND)
-				continue;
-			break;
+			handleReadyToRespond(client, buffer, clientPort);
 		}
 		else if (client->getState() == Client::READY_TO_RESPOND)
 		{
 			handleReadyToRespond(client, buffer, clientPort);
-			break;
-		}
-		else {
-			break;
-		}
 	}
 	return 1;
 }
@@ -294,7 +280,7 @@ void Server::acceptClient(int serverSocketFd)
 	}
 	// add the client socket to epoll
 	struct epoll_event newEventClient;
-	newEventClient.events = EPOLLIN | EPOLLET; // edge triggered (enable the possibility to handle partial data)
+	newEventClient.events = EPOLLIN; // disable edge triggered for clients to allow reading partial data
 	newEventClient.data.fd = clientSocketFd;
 	if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientSocketFd, &newEventClient) == -1)
 	{
@@ -583,7 +569,7 @@ void Server::switchToReadMode(int clientSocketFd, int clientPort)
 {
 	(void)clientPort;
 	struct epoll_event readEvent;
-	readEvent.events = EPOLLIN | EPOLLET; // Edge triggered
+	readEvent.events = EPOLLIN; // Edge triggered is disabled here to allow reading partial data
 	readEvent.data.fd = clientSocketFd;
 	
 	if (epoll_ctl(_epollFd, EPOLL_CTL_MOD, clientSocketFd, &readEvent) == -1) {
