@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
+/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 13:46:15 by jveirman          #+#    #+#             */
-/*   Updated: 2025/08/22 22:38:11 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/09/18 11:12:42 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@
 #include <cstdlib>
 
 #define MAX_QUEUE 10
-#define BUFFER_SIZE 2048
+#define BUFFER_LENGTH 8192 // 8kb 
 #define UPLOAD_PATH "./www/uploads/"
 #define THROW_MSG(port, msg) throw std::runtime_error("\e[31m[" + to_string(port) + "]\e[0m\t" + "\e[2m" + msg + "\e[0m")
 #define COUT_MSG(port, msg) std::cout << "\e[34m[" + to_string(port) + "]\e[0m\t" + "\e[2m" + msg + "\e[0m" << std::endl
@@ -65,8 +65,10 @@ class Server
 
 		std::string 		selectMethod(const char* buffer, int port, bool);
 		void				sendErrorAndCloseClient(int clientSocketFd, const std::string &errorResponse, int port);
-		int					handleReadEvent(int clientSocketFd, Client* client, int clientPort);
-		int					handleWriteEvent(int clientSocketFd, Client* client, int clientPort);
+		int					handleReadEvent(Client *client, int clientPort);
+		int					handleWriteEvent(Client *client, int clientPort);
+		void				switchToWriteMode(int clientSocketFd, int port);
+		void				switchToReadMode(int clientSocketFd, int port);
 		
 		// Prevent Copying
 		Server(const Server& other);
@@ -84,6 +86,15 @@ class Server
 		bool						isServerSocket(int fd);
 		const LocationConfig*		matchLocation(std::string& path);
 
+		// request handling
+		void						handleReadHeaders(Client* client);
+		void						parseRequestHeaders(Client* client);
+		void						handleReadBody(Client* client);
+		void						handleReadyToRespond(Client* client, char* buffer, int clientPort);
+		// request parser
+		void						parseContentLength(const std::string& request, Client* client);
+		void						parseKeepAlive(const std::string& request, Client* client);
+
 		int							getPort() const;
 		std::vector<int>			getServerSocketFds() const;
 		int							getClientPort(int clientSocketFd);
@@ -92,7 +103,7 @@ class Server
 		ssize_t						getClientBodyLimit() const;
 		std::map<int, Client *>		getClients() const;
 
-		void					setEpollFd(int epollFd);
+		void						setEpollFd(int epollFd);
 };
 
 #endif

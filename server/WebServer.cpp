@@ -6,7 +6,7 @@
 /*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/01 15:55:05 by jveirman          #+#    #+#             */
-/*   Updated: 2025/08/16 16:05:21 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/17 12:07:42 by jveirman         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -151,37 +151,27 @@ void WebServer::evenLoop(int sharedEpollFd)
 					int clientPort = server->getClientPort(events[i].data.fd);
 					if (clientPort == -1)
 					{
-						CERR_MSG(server->getPort(), "Error getting client port");
+						// Client doesn't exist anymore, clean up the file descriptor
+						std::cout << "\e[33m[" << server->getPort() << "]\e[0m\t" << "Client port not found for fd " << events[i].data.fd << ", cleaning up" << std::endl; //dev
+						server->closeClient(events[i], server->getPort());
 						continue;
 					}
-					if (events[i].events & EPOLLIN)
-					{
-						int retValue = server->treatMethod(events[i], clientPort);
-						if (retValue == -1)
-						{
-							server->closeClient(events[i], clientPort);
-							CERR_MSG(clientPort, "Error processing request");
-						}
-						else if (retValue == 0)
-							server->closeClient(events[i], clientPort);
-						
-					}
-					else if (events[i].events & EPOLLOUT)
-					{
-						// Handle write events - send response
-						int retValue = server->treatMethod(events[i], clientPort);
-						if (retValue == -1)
-						{
-							server->closeClient(events[i], clientPort);
-							CERR_MSG(clientPort, "Error sending response");
-						}
-						else if (retValue == 0)
-							server->closeClient(events[i], clientPort);
-					}
-					else if (events[i].events & EPOLLERR)
+					if (events[i].events & EPOLLERR)
 						server->closeClient(events[i], clientPort);
+					else {
+						int retValue = server->treatMethod(events[i], clientPort);
+						std::cout << "\e[36m[" << clientPort << "]\e[0m\t" << "treatMethod returned: " << retValue << std::endl; //dev
+						
+						// Handle disconnection based on return value
+						if (retValue == 0) {
+							std::cout << "\e[36m[" << clientPort << "]\e[0m\t" << "Client disconnected, closing connection" << std::endl; //dev
+							server->closeClient(events[i], clientPort);
+						} else if (retValue == -1) {
+							std::cout << "\e[31m[" << clientPort << "]\e[0m\t" << "Error in treatMethod, closing connection" << std::endl; //dev
+							server->closeClient(events[i], clientPort);
+						}
+					}
 				}
-				
 			}
 		}
 	}
