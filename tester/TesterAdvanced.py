@@ -1249,3 +1249,4 @@ if __name__ == "__main__":
         if tester.server_process:
             tester.server_process.terminate()
             tester.server_process.wait()
+    subprocess.run("rm -rf www/uploads/1*.txt", shell=True)
