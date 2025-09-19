@@ -429,25 +429,36 @@ std::string method::trimFileName(std::string str)
 
 std::string method::DELETE(const std::string& request, Server &server)
 {
-	std::string filePath;
+	std::string requestPath;
 	size_t start = request.find("DELETE") + 7;
 	size_t end = request.find(" ", start);
 	if (start == std::string::npos || end == std::string::npos) throw std::runtime_error(ERROR_400_RESPONSE);
-	filePath = request.substr(start, end - start);
-	const LocationConfig* location = server.matchLocation(filePath);
+	requestPath = request.substr(start, end - start);
+	
+	const LocationConfig* location = server.matchLocation(requestPath);
 	if (!location)
 		throw std::runtime_error(ERROR_404_RESPONSE);
 	if (checkPermissions("DELETE", location) == false)
 		throw std::runtime_error(ERROR_403_RESPONSE);
+	
 	std::string locationRoot = location->getLocationRoot();
-	std::string locationIndex = location->getLocationIndex();
-	if (locationRoot.empty() || locationIndex.empty())
+	if (locationRoot.empty())
 		throw std::runtime_error(ERROR_500_RESPONSE);
-	filePath = locationRoot + locationIndex;
-	std::ifstream	file(filePath.c_str());
+		
+	std::string filename;
+	size_t lastSlash = requestPath.find_last_of('/');
+	if (lastSlash != std::string::npos && lastSlash < requestPath.length() - 1) {
+		filename = requestPath.substr(lastSlash + 1);
+	} else {
+		throw std::runtime_error(ERROR_400_RESPONSE); // Invalid path
+	}
+	
+	std::string filePath = locationRoot + filename;
+	std::ifstream file(filePath.c_str());
 	if (!file.is_open())
 		throw std::runtime_error(ERROR_404_RESPONSE);
 	file.close();
+	
 	if (std::remove(filePath.c_str()) == 0)
 		return (DELETE_200_RESPONSE);
 	else

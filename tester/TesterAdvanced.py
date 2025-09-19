@@ -46,64 +46,373 @@ class WebservCorrectionTester:
         """Check for memory leaks using valgrind"""
         self.print_section("MEMORY LEAK CHECK")
         
-#         # Create a simple test config
-#         test_config = """
-# server {
-#     host 127.0.0.1;
-#     listen 8080;
-#     server_name test;
-#     root ./www/;
-    
-#     location / {
-#         index index.html;
-#         allowed_methods GET;
-#     }
-# }
-# """
-#         fd, config_path = tempfile.mkstemp(suffix='.conf')
-#         with os.fdopen(fd, 'w') as f:
-#             f.write(test_config)
+        # Check if valgrind is installed
+        result = subprocess.run("which valgrind", shell=True, capture_output=True)
+        if result.returncode != 0:
+            print(f"{YELLOW}  Valgrind not installed. Install with: sudo apt-get install valgrind{RESET}")
+            print(f"{YELLOW}  Skipping memory leak tests{RESET}")
+            return None
         
-#         try:
-#             # Run server with valgrind
-#             cmd = f"valgrind --leak-check=full --show-leak-kinds=all {self.binary_path} {config_path}"
-#             process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, 
-#                                      stderr=subprocess.STDOUT, text=True)
+        tests_passed = []
+        
+        # Test 1: Valid configuration - should have no memory leaks
+        print(f"{BLUE}  Testing valid configuration with valgrind...{RESET}")
+        valid_config = """
+server {
+    host 127.0.0.1;
+    listen 8090;
+    server_name test_server;
+    root ./www/;
+    index index.html;
+    
+    location / {
+        allowed_methods GET POST;
+        autoindex on;
+    }
+}
+"""
+        fd, valid_config_path = tempfile.mkstemp(suffix='.conf')
+        with os.fdopen(fd, 'w') as f:
+            f.write(valid_config)
+        
+        # Run with valgrind for 10 seconds then kill
+        valgrind_cmd = [
+            "valgrind", 
+            "--leak-check=full", 
+            "--show-leak-kinds=all",
+            "--track-origins=yes",
+            "--error-exitcode=1",
+            self.binary_path, 
+            valid_config_path
+        ]
+        
+        try:
+            process = subprocess.Popen(valgrind_cmd, 
+                                     stdout=subprocess.PIPE, 
+                                     stderr=subprocess.PIPE,
+                                     text=True)
+            time.sleep(3)  # Let server start
             
-#             # Let it run for a bit
-#             time.sleep(3)
+            # Make a simple request to exercise the server
+            try:
+                subprocess.run("curl -s http://127.0.0.1:8090/ > /dev/null", 
+                             shell=True, timeout=2, capture_output=True)
+            except:
+                pass  # Request might fail, that's ok
             
-#             # Send some requests
-#             subprocess.run("curl http://127.0.0.1:8080/ > /dev/null 2>&1", shell=True)
-#             subprocess.run("curl -X POST -d 'test' http://127.0.0.1:8080/ > /dev/null 2>&1", shell=True)
+            # Send SIGTERM to gracefully shutdown
+            process.terminate()
+            stdout, stderr = process.communicate(timeout=10)
             
-#             time.sleep(1)
+            # Check valgrind output for leaks
+            leak_summary = "no leaks are possible" in stderr or "All heap blocks were freed" in stderr
+            no_errors = "ERROR SUMMARY: 0 errors" in stderr
             
-#             # Stop server gracefully
-#             process.send_signal(signal.SIGTERM)
-#             output, _ = process.communicate(timeout=5)
+            test_passed = leak_summary and process.returncode == 0
+            details = f"No memory leaks detected" if test_passed else f"Memory leaks found - check valgrind output"
+            self.print_test("Valid config - no memory leaks", test_passed, details)
+            tests_passed.append(test_passed)
             
-#             # Check for leaks in output
-#             if "definitely lost: 0 bytes" in output and "indirectly lost: 0 bytes" in output:
-#                 self.print_test("No memory leaks detected", True)
-#                 return True
-#         #     elif "valgrind" not in output:
-#         #         self.print_test("Valgrind check", False, "Valgrind not available, skipping memory test")
-#         #         return None
-#         #     else:
-#         #         self.print_test("Memory leaks detected", False)
-#         #         print(f"{RED}Valgrind output:{RESET}")
-#         #         for line in output.split('\n'):
-#         #             if 'lost' in line.lower():
-#         #                 print(f"  {line}")
-#         #         return False
-                
-#         # except Exception as e:
-#         #     self.print_test("Memory leak test", False, f"Error: {e}")
-#         #     return False
-#         finally:
-#             os.unlink(config_path)
-#             subprocess.run(["pkill", "-f", self.binary_path], capture_output=True)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            self.print_test("Valid config - no memory leaks", False, "Valgrind test timed out")
+            tests_passed.append(False)
+        except Exception as e:
+            self.print_test("Valid config - no memory leaks", False, f"Error: {e}")
+            tests_passed.append(False)
+        finally:
+            os.unlink(valid_config_path)
+        
+        # Test 2: Configuration with typo in directive
+        print(f"{BLUE}  Testing config with typo...{RESET}")
+        typo_config = """
+server {
+    hst 127.0.0.1;
+    listen 8091;
+    server_nam test_server;
+    rot ./www/;
+    
+    location / {
+        allowed_method GET;
+        autoinde on;
+    }
+}
+"""
+        fd, typo_config_path = tempfile.mkstemp(suffix='.conf')
+        with os.fdopen(fd, 'w') as f:
+            f.write(typo_config)
+        
+        try:
+            result = subprocess.run([self.binary_path, typo_config_path], 
+                                  capture_output=True, text=True, timeout=5)
+            # Should fail due to invalid config
+            test_passed = result.returncode != 0
+            details = f"Server correctly rejected invalid config" if test_passed else f"Server accepted invalid config"
+            self.print_test("Config with typos rejected", test_passed, details)
+            tests_passed.append(test_passed)
+        except subprocess.TimeoutExpired:
+            self.print_test("Config with typos rejected", False, "Server hung on invalid config")
+            tests_passed.append(False)
+        except Exception as e:
+            self.print_test("Config with typos rejected", False, f"Error: {e}")
+            tests_passed.append(False)
+        finally:
+            os.unlink(typo_config_path)
+        
+        # Test 3: Running webserv without arguments
+        print(f"{BLUE}  Testing webserv without arguments...{RESET}")
+        try:
+            result = subprocess.run([self.binary_path], 
+                                  capture_output=True, text=True, timeout=3)
+            # Should fail or show usage
+            test_passed = result.returncode != 0 or "usage" in result.stderr.lower() or "Usage" in result.stderr
+            details = f"Correctly handles missing config file" if test_passed else f"No proper error handling"
+            self.print_test("No arguments handling", test_passed, details)
+            tests_passed.append(test_passed)
+        except subprocess.TimeoutExpired:
+            self.print_test("No arguments handling", False, "Server hung without config")
+            tests_passed.append(False)
+        except Exception as e:
+            self.print_test("No arguments handling", False, f"Error: {e}")
+            tests_passed.append(False)
+        
+        # Test 4: Duplicate server blocks (same port)
+        print(f"{BLUE}  Testing duplicate server configuration...{RESET}")
+        duplicate_config = """
+server {
+    host 127.0.0.1;
+    listen 8092;
+    server_name server1;
+    root ./www/;
+    
+    location / {
+        allowed_methods GET;
+    }
+}
+
+server {
+    host 127.0.0.1;
+    listen 8092;
+    server_name server2;
+    root ./www/;
+    
+    location / {
+        allowed_methods GET;
+    }
+}
+"""
+        fd, duplicate_config_path = tempfile.mkstemp(suffix='.conf')
+        with os.fdopen(fd, 'w') as f:
+            f.write(duplicate_config)
+        
+        try:
+            result = subprocess.run([self.binary_path, duplicate_config_path], 
+                                  capture_output=True, text=True, timeout=5)
+            # Should fail due to duplicate port binding
+            test_passed = result.returncode != 0
+            details = f"Correctly rejected duplicate servers" if test_passed else f"Accepted duplicate servers"
+            self.print_test("Duplicate server rejection", test_passed, details)
+            tests_passed.append(test_passed)
+        except subprocess.TimeoutExpired:
+            self.print_test("Duplicate server rejection", False, "Server hung on duplicate config")
+            tests_passed.append(False)
+        except Exception as e:
+            self.print_test("Duplicate server rejection", False, f"Error: {e}")
+            tests_passed.append(False)
+        finally:
+            os.unlink(duplicate_config_path)
+        
+        # Test 5: Simple run and kill signal test
+        print(f"{BLUE}  Testing signal handling...{RESET}")
+        signal_config = """
+server {
+    host 127.0.0.1;
+    listen 8093;
+    server_name signal_test;
+    root ./www/;
+    
+    location / {
+        allowed_methods GET;
+    }
+}
+"""
+        fd, signal_config_path = tempfile.mkstemp(suffix='.conf')
+        with os.fdopen(fd, 'w') as f:
+            f.write(signal_config)
+        
+        try:
+            # Start server
+            process = subprocess.Popen([self.binary_path, signal_config_path],
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            time.sleep(2)  # Let server start
+            
+            # Check if server is running
+            server_running = process.poll() is None
+            
+            # Send SIGTERM
+            if server_running:
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                    clean_exit = process.returncode in [0, -15]  # 0 or SIGTERM
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    clean_exit = False
+            else:
+                clean_exit = False
+            
+            test_passed = server_running and clean_exit
+            details = f"Server started and handled SIGTERM cleanly" if test_passed else f"Signal handling issues"
+            self.print_test("Signal handling (SIGTERM)", test_passed, details)
+            tests_passed.append(test_passed)
+            
+        except Exception as e:
+            self.print_test("Signal handling (SIGTERM)", False, f"Error: {e}")
+            tests_passed.append(False)
+        finally:
+            os.unlink(signal_config_path)
+        
+        # Test 6: SIGINT handling
+        print(f"{BLUE}  Testing SIGINT handling...{RESET}")
+        try:
+            # Create another simple config
+            fd, sigint_config_path = tempfile.mkstemp(suffix='.conf')
+            with os.fdopen(fd, 'w') as f:
+                f.write(signal_config)
+            
+            process = subprocess.Popen([self.binary_path, sigint_config_path],
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            time.sleep(2)
+            
+            server_running = process.poll() is None
+            
+            # Send SIGINT (Ctrl+C)
+            if server_running:
+                process.send_signal(signal.SIGINT)
+                try:
+                    process.wait(timeout=5)
+                    clean_exit = process.returncode in [0, -2]  # 0 or SIGINT
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    clean_exit = False
+            else:
+                clean_exit = False
+            
+            test_passed = server_running and clean_exit
+            details = f"Server handled SIGINT cleanly" if test_passed else f"SIGINT handling issues"
+            self.print_test("Signal handling (SIGINT)", test_passed, details)
+            tests_passed.append(test_passed)
+            
+        except Exception as e:
+            self.print_test("Signal handling (SIGINT)", False, f"Error: {e}")
+            tests_passed.append(False)
+        finally:
+            os.unlink(sigint_config_path)
+        
+        # Test 7: Invalid port numbers
+        print(f"{BLUE}  Testing invalid port numbers...{RESET}")
+        invalid_port_configs = [
+            ("Port 0", "listen 0;"),
+            ("Port > 65535", "listen 99999;"),
+            ("Negative port", "listen -1;"),
+            ("Non-numeric port", "listen abc;")
+        ]
+        
+        for test_name, port_directive in invalid_port_configs:
+            invalid_config = f"""
+server {{
+    host 127.0.0.1;
+    {port_directive}
+    server_name test;
+    root ./www/;
+    
+    location / {{
+        allowed_methods GET;
+    }}
+}}
+"""
+            fd, invalid_path = tempfile.mkstemp(suffix='.conf')
+            with os.fdopen(fd, 'w') as f:
+                f.write(invalid_config)
+            
+            try:
+                result = subprocess.run([self.binary_path, invalid_path], 
+                                      capture_output=True, text=True, timeout=3)
+                test_passed = result.returncode != 0
+                details = f"Correctly rejected {test_name.lower()}" if test_passed else f"Accepted {test_name.lower()}"
+                self.print_test(f"Invalid port handling - {test_name}", test_passed, details)
+                tests_passed.append(test_passed)
+            except subprocess.TimeoutExpired:
+                self.print_test(f"Invalid port handling - {test_name}", False, "Server hung")
+                tests_passed.append(False)
+            except Exception as e:
+                self.print_test(f"Invalid port handling - {test_name}", False, f"Error: {e}")
+                tests_passed.append(False)
+            finally:
+                os.unlink(invalid_path)
+        
+        # Test 8: Missing required directives
+        print(f"{BLUE}  Testing missing required directives...{RESET}")
+        missing_configs = [
+            ("No listen", """
+server {
+    host 127.0.0.1;
+    server_name test;
+    root ./www/;
+    location / {
+        allowed_methods GET;
+    }
+}"""),
+            ("No root", """
+server {
+    host 127.0.0.1;
+    listen 8094;
+    server_name test;
+    location / {
+        allowed_methods GET;
+    }
+}"""),
+            ("Empty server block", """
+server {
+}""")
+        ]
+        
+        for test_name, config_content in missing_configs:
+            fd, missing_path = tempfile.mkstemp(suffix='.conf')
+            with os.fdopen(fd, 'w') as f:
+                f.write(config_content)
+            
+            try:
+                result = subprocess.run([self.binary_path, missing_path], 
+                                      capture_output=True, text=True, timeout=3)
+                test_passed = result.returncode != 0
+                details = f"Correctly rejected config with {test_name.lower()}" if test_passed else f"Accepted incomplete config"
+                self.print_test(f"Missing directive - {test_name}", test_passed, details)
+                tests_passed.append(test_passed)
+            except subprocess.TimeoutExpired:
+                self.print_test(f"Missing directive - {test_name}", False, "Server hung")
+                tests_passed.append(False)
+            except Exception as e:
+                self.print_test(f"Missing directive - {test_name}", False, f"Error: {e}")
+                tests_passed.append(False)
+            finally:
+                os.unlink(missing_path)
+        
+        # Print summary
+        passed_count = sum(tests_passed)
+        total_count = len(tests_passed)
+        
+        print(f"\n    {BLUE}Memory Leak Test Summary:{RESET}")
+        print(f"    Tests passed: {passed_count}/{total_count}")
+        
+        overall_passed = passed_count >= (total_count * 0.8)  # 80% pass rate
+        
+        if overall_passed:
+            print(f"    {GREEN}✓ MEMORY LEAK TESTS PASSED{RESET} - Server handles errors gracefully")
+        else:
+            print(f"    {RED}✗ MEMORY LEAK TESTS FAILED{RESET} - Server has memory management issues")
+        
+        return overall_passed
    
 
     def test_io_multiplexing_behavioral(self):
@@ -450,7 +759,10 @@ server {
         time.sleep(1)
         
         # Try to delete (may need to adjust based on actual implementation)
-        result = subprocess.run("curl -s -o /dev/null -w '%{http_code}' -X DELETE http://127.0.0.1:8888/uploads/file.txt",
+        #check if the fileToDelete.txt exists, if not create it
+        if not os.path.exists("www/uploads/fileToDelete.txt"):
+            subprocess.run("cp www/uploads/file.txt www/uploads/fileToDelete.txt", shell=True)
+        result = subprocess.run("curl -s -o /dev/null -w '%{http_code}' -X DELETE http://127.0.0.1:8888/uploads/fileToDelete.txt",
                               shell=True, capture_output=True, text=True)
         test_passed = result.stdout.strip() in ["200", "204", "404"]  # 404 if file doesn't exist
         self.print_test("DELETE request", test_passed)
