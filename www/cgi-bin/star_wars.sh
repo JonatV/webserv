@@ -52,6 +52,9 @@ get_character_info() {
         "ed")
             echo "Edoulazone|Gros beauf|BX|Ses pets font fondre le métal|Va finir le common core seulement avec des fonctions de parsing|Est sacrément con"
             ;;
+		"sim")
+			echo "Rock angel|Gros beauf|Tournai|Sa moustache fait fondre les coeurs|A mis plus de temps sur Pipex que sur Minishell|A le pire sens de l'orientation de toute la galaxie"
+			;;
         *)
             echo "Agent Inconnu|Classification: INCONNUE|Outer Rim|Arme: CLASSIFIÉE|Mission: REDACTED|Statut: EN SURVEILLANCE"
             ;;
@@ -416,7 +419,7 @@ case "$action" in
             RESPONSE="<div class='error-display'>
                 <h3>🚫 ACCÈS REFUSÉ 🚫</h3>
                 <p>Spécifiez un code d'agent valide:</p>
-                <p>luke, vader, leia, han, yoda, obiwan</p>
+                <p>luke, vader, leia, han, yoda, obiwan, jon, ed ,sim</p>
             </div>"
         fi
         ;;
@@ -1341,6 +1344,7 @@ cat << 'EOF'
                 <a href="?action=character&character=obiwan" class="imperial-btn">🧙 Dossier Obi-Wan</a>
                 <a href="?action=character&character=jon" class="imperial-btn">👨🏻‍🦲 Dossier jveirman</a>
                 <a href="?action=character&character=ed" class="imperial-btn">🍺 Dossier eschmitz</a>
+                <a href="?action=character&character=sim" class="imperial-btn">🥸 Dossier slangero</a>
                 <a href="?action=planet&planet=tatooine" class="imperial-btn">🏜️ Archives Tatooine</a>
                 <a href="?action=planet&planet=coruscant" class="imperial-btn">🌆 Archives Coruscant</a>
             </div>
