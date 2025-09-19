@@ -133,13 +133,13 @@ std::string method::getErrorHtml(int port, const std::string& errorMessage, Serv
 		}
 		else
 		{
-			CERR_MSG(port, "GET Sending error " + errorCode + ": " + errorMessage);
+			CERR_MSG(port, "GET Sending error " + errorCode + ": sending default 404 fallback page");
 			return (errorMessage);
 		}
 	}
 	else
 	{
-		CERR_MSG(port, "GET Sending error " + errorCode + ": " + errorMessage);
+		CERR_MSG(port, "GET Sending error " + errorCode + ": sending default 404 fallback page");
 		return (errorMessage);
 	}
 }

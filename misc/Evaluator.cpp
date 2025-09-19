@@ -34,7 +34,6 @@ Evaluator::Evaluator() {
 		_name = "Eschmitz";
 		_balance = "-42";
 		_pictureURL = "https://cdn.intra.42.fr/users/d3a7ccedc76389e1859d7ddc54968fb1/eschmitz.jpg";
-		std::cerr << "Error: Could not open evaluator.conf for reading. Using default values." << std::endl;
 	}
 	update_hack_html();
 }
@@ -52,7 +51,6 @@ void Evaluator::update_hack_html() {
 		}
 		hackFile.close();
 	} else {
-		std::cerr << "Error: Could not open hack.html for reading." << std::endl;
 		return;
 	}
 	std::string imgTag = "{{pic}}";
@@ -72,7 +70,6 @@ void Evaluator::update_hack_html() {
 		outFile << content;
 		outFile.close();
 	} else {
-		std::cerr << "Error: Could not open hack.html for writing." << std::endl;
 		return;
 	}
 }
