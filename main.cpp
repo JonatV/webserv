@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
+/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/04/02 02:47:49 by jveirman          #+#    #+#             */
-/*   Updated: 2025/09/18 14:15:47 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/19 16:08:33 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,21 +21,21 @@
 #include <vector>
 
 int main(int argc, char **argv) {
-	(void)argc;
+	// Basic argument validation
+	if (argc != 2) {
+		std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
+		return 1;
+	}
 	
 	// Set up signal handlers for graceful shutdown
 	SignalHandler::setupSignals();
-	
 	Config config;
 
 	try {
-		bool *resultPtr = config.parseFile(argv[1]);
-		bool result = *resultPtr;
-		delete resultPtr;
+		bool result = config.parseFile(argv[1]);
 		
 		if (result)
 			logs::msg(NOPORT, logs::Green, "Configuration file parsed successfully", true);
-
 	} 
 	catch (Config::ConfigException& e) {
 		std::cerr << "Error parsing configuration: " << e.what() << " (code: " << e.getCode() << ")" << std::endl;

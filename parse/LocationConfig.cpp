@@ -3,227 +3,172 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.cpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jveirman <jveirman@student.s19.be>         +#+  +:+       +#+        */
+/*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/09/18 13:20:20 by jveirman         ###   ########.fr       */
+/*   Updated: 2025/09/19 16:05:00 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "LocationConfig.hpp"
+#include "Config.hpp"
 
-LocationConfig::LocationConfig() : _locationRoot("./www/"), _autoindex(false) {
-    // Initialize with default values
+LocationConfig::LocationConfig() : _locationRoot(ConfigConstants::DEFAULT_ROOT), _autoindex(false) {
 }
 
-LocationConfig::LocationConfig(std::string root) : _locationRoot(root), _autoindex(false) {
-    // Initialize with root values
+LocationConfig::LocationConfig(const std::string& root) : _locationRoot(root), _autoindex(false) {
 }
 
 LocationConfig::~LocationConfig() {
-    // Clean up if needed
 }
 
-// Parse index file from configuration tokens
-// Dans LocationConfig.cpp, remplace la fonction getIndex par :
-
-std::string *LocationConfig::getIndex(std::vector<std::string> tokens, size_t i, const std::string& rootPath) {
-	// Check if we have enough tokens
-	if (i + 1 >= tokens.size()) {
-		throw ConfigException(ERROR_INVALID_INDEX_FILES);
-	}
-	// Skip the "index" token
-	i++;
-	std::string indexName = tokens[i];
-	// Basic validation
-	if (indexName.empty()) {
-		throw ConfigException(ERROR_INVALID_INDEX_FILES);
-	}
-	
-	// Check for valid extensions (ajout des extensions CGI)
-	bool validExtension = false;
-	if (indexName.length() >= 5 && indexName.substr(indexName.length() - 5) == ".html") validExtension = true;
-	if (indexName.length() >= 4 && indexName.substr(indexName.length() - 4) == ".css") validExtension = true;
-	if (indexName.length() >= 4 && indexName.substr(indexName.length() - 4) == ".ico") validExtension = true;
-	if (indexName.length() >= 4 && indexName.substr(indexName.length() - 4) == ".txt") validExtension = true;
-	// *** AJOUT DES EXTENSIONS CGI ***
-	if (indexName.length() >= 3 && indexName.substr(indexName.length() - 3) == ".py") validExtension = true;
-	if (indexName.length() >= 3 && indexName.substr(indexName.length() - 3) == ".sh") validExtension = true;
-	if (indexName.length() >= 3 && indexName.substr(indexName.length() - 3) == ".pl") validExtension = true;
-	if (indexName.length() >= 4 && indexName.substr(indexName.length() - 4) == ".cgi") validExtension = true;
-	
-	if (!validExtension) {
-		throw ConfigException(ERROR_INVALID_INDEX_FORMAT);
-	}
-	
-	// Check for semicolon
-	if (i + 1 >= tokens.size() || tokens[i + 1] != ";") {
-		throw ConfigException(ERROR_INVALID_INDEX_FILES); // Missing semicolon
-	}
-	// Construct full path
-	std::string fullPath = rootPath;
-	// Make sure rootPath ends with a slash
-	if (!rootPath.empty() && rootPath[rootPath.length() - 1] != '/') {
-		fullPath += "/";
-	}
-	fullPath += indexName;
-	// Check if file exists and is readable
-	struct stat file_stat;
-	if (stat(fullPath.c_str(), &file_stat) != 0) {
-		throw ConfigException(ERROR_INDEX_FILE_NOT_FOUND);
-	}
-	// Check if it's a regular file
-	if (!S_ISREG(file_stat.st_mode)) {
-		throw ConfigException(ERROR_INDEX_NOT_A_FILE);
-	}
-	// Check for read permissions
-	if (access(fullPath.c_str(), R_OK) != 0) {
-		throw ConfigException(ERROR_INDEX_FILE_NO_ACCESS);
-	}
-	std::string *result = new std::string(indexName);
-	return result;
+/**
+ * Parses and validates index file configuration
+ * Validates file extension, constructs full path, and checks file accessibility
+ * Supports web content files (.html, .css, .txt, .ico) and CGI scripts (.py, .sh, .pl, .cgi)
+ * @param tokens Configuration tokens
+ * @param i Current position in tokens (not modified - semicolon handled by caller)
+ * @param rootPath Root directory for resolving relative index file path
+ * @return Index filename (relative to root)
+ */
+std::string LocationConfig::getIndex(const std::vector<std::string>& tokens, size_t i, const std::string& rootPath) {
+    if (i + 1 >= tokens.size()) {
+        throw ConfigException(ERROR_INVALID_INDEX_FILES);
+    }
+    
+    i++; // Skip "index"
+    std::string indexName = tokens[i];
+    
+    if (indexName.empty() || !TokenHelper::isValidFileExtension(indexName)) {
+        throw ConfigException(ERROR_INVALID_INDEX_FORMAT);
+    }
+    
+    if (i + 1 >= tokens.size() || tokens[i + 1] != ";") {
+        throw ConfigException(ERROR_INVALID_INDEX_FILES);
+    }
+    
+    // Construct full path for validation
+    std::string fullPath = rootPath;
+    if (!rootPath.empty() && rootPath[rootPath.length() - 1] != '/') {
+        fullPath += "/";
+    }
+    fullPath += indexName;
+    
+    PathValidator::validateFile(fullPath);
+    return indexName;
 }
 
-// Parse allowed HTTP methods from configuration tokens
-std::string *LocationConfig::getAllowedMethods(std::vector<std::string> tokens) {
-	std::string methods;
-
-	// Find allowed_methods directive and collect values
-	for (size_t i = 0; i < tokens.size(); i++) {
-		if (tokens[i] == "allowed_methods") {
-			i++; // Move past the "allowed_methods" token
-			
-			// Collect method names until semicolon
-			while (i < tokens.size() && tokens[i] != ";") {
-				methods += tokens[i] + " ";
-				i++;
-			}
-			
-			break;
-		}
-	}
-	if (methods.empty()) {
-		throw ConfigException(ERROR_INVALID_ALLOWED_METHODS);
-	}
-	// Remove trailing space
-	if (!methods.empty()) {
-		methods.erase(methods.length() - 1, 1);
-	}
-	std::string *result = new std::string(methods);
-	return result;
+/**
+ * Parses allowed HTTP methods for the location
+ * Validates method names against supported HTTP methods (GET, POST, DELETE)
+ * @param tokens Configuration tokens
+ * @param i Current position in tokens, updated to position after semicolon
+ * @return Vector of validated HTTP method names
+ */
+std::vector<std::string> LocationConfig::getAllowedMethods(const std::vector<std::string>& tokens, size_t& i) {
+    std::vector<std::string> methods;
+    
+    i++; // Skip "allowed_methods"
+    
+    while (i < tokens.size() && tokens[i] != ";") {
+        if (!TokenHelper::isValidHttpMethod(tokens[i])) {
+            throw ConfigException(ERROR_INVALID_ALLOWED_METHODS);
+        }
+        methods.push_back(tokens[i]);
+        i++;
+    }
+    
+    if (methods.empty()) {
+        throw ConfigException(ERROR_INVALID_ALLOWED_METHODS);
+    }
+    
+    TokenHelper::expectSemicolon(tokens, i);
+    return methods;
 }
 
-// Parse root directory from configuration tokens
-std::string *LocationConfig::getRoot(std::vector<std::string> tokens, size_t i) {
-	// Check if we have enough tokens
-	if (i + 1 >= tokens.size()) {
-		throw ConfigException(ERROR_INVALID_ROOT_PATH);
-	}
-	// Skip the "root" token
-	i++;
-	std::string path = tokens[i];
-	// Basic validation
-	if (path.empty()) {
-		throw ConfigException(ERROR_INVALID_ROOT_PATH);
-	}
-	// Check for semicolon
-	if (i + 1 >= tokens.size() || tokens[i + 1] != ";") {
-		throw ConfigException(ERROR_INVALID_ROOT_PATH); // Missing semicolon
-	}
-
-	// Check if path is a directory and accessible
-	struct stat path_stat;
-	if (stat(path.c_str(), &path_stat) != 0) {
-		throw ConfigException(ERROR_ROOT_PATH_NOT_FOUND);
-	}
-	// Check if it's a directory
-	if (!S_ISDIR(path_stat.st_mode)) {
-		throw ConfigException(ERROR_ROOT_PATH_NOT_DIRECTORY);
-	}
-	// Check for read permissions
-	if (access(path.c_str(), R_OK) != 0) {
-		throw ConfigException(ERROR_ROOT_PATH_NO_ACCESS);
-	}
-	std::string *result = new std::string(path);
-	return result;
+/**
+ * Parses and validates root directory path for location
+ * Ensures directory exists, is accessible, and has proper permissions
+ * @param tokens Configuration tokens
+ * @param i Current position in tokens, updated to position after semicolon
+ * @return Validated root directory path
+ */
+std::string LocationConfig::getRoot(const std::vector<std::string>& tokens, size_t& i) {
+    if (i + 1 >= tokens.size()) {
+        throw ConfigException(ERROR_INVALID_ROOT_PATH);
+    }
+    
+    i++; // Skip "root"
+    
+    std::string path = tokens[i];
+    if (path.empty()) {
+        throw ConfigException(ERROR_INVALID_ROOT_PATH);
+    }
+    
+    PathValidator::validateDirectory(path);
+    
+    i++;
+    TokenHelper::expectSemicolon(tokens, i);
+    return path;
 }
 
-// Parse autoindex flag from configuration tokens
-bool *LocationConfig::getAutoIndex(std::vector<std::string> tokens) {
-	bool autoindex = false;
-
-	// Find autoindex directive and get value
-	for (size_t i = 0; i < tokens.size(); i++) {
-		if (tokens[i] == "autoindex" && i + 1 < tokens.size()) {
-			std::string value = tokens[i + 1];
-			
-			if (value == "on") {
-				autoindex = true;
-			} else if (value == "off") {
-				autoindex = false;
-			} else {
-				throw ConfigException(ERROR_INVALID_AUTOINDEX);
-			}
-			break;
-		}
-	}
-	bool *result = new bool(autoindex);
-	return result;
+/**
+ * Parses autoindex directive (directory listing configuration)
+ * Accepts "on" or "off" values to enable/disable automatic directory indexing
+ * @param tokens Configuration tokens
+ * @param i Current position in tokens, updated to position after semicolon
+ * @return Autoindex setting (true for "on", false for "off")
+ */
+bool LocationConfig::getAutoIndex(const std::vector<std::string>& tokens, size_t& i) {
+    if (i + 1 >= tokens.size()) {
+        throw ConfigException(ERROR_INVALID_AUTOINDEX);
+    }
+    
+    i++; // Skip "autoindex"
+    
+    bool autoindex;
+    if (tokens[i] == "on") {
+        autoindex = true;
+    } else if (tokens[i] == "off") {
+        autoindex = false;
+    } else {
+        throw ConfigException(ERROR_INVALID_AUTOINDEX);
+    }
+    
+    i++;
+    TokenHelper::expectSemicolon(tokens, i);
+    return autoindex;
 }
 
-// Parse CGI path from configuration tokens
-std::string *LocationConfig::getCgiPath(std::vector<std::string> tokens, size_t i) {
-	if (i + 1 >= tokens.size()) {
-		throw ConfigException(ERROR_INVALID_CGI_PATH);
-	}
-	i++;
-	std::string cgiPath = tokens[i];
-	if (cgiPath.empty()) {
-		throw ConfigException(ERROR_INVALID_CGI_PATH);
-	}
-	if (i + 1 >= tokens.size() || tokens[i + 1] != ";") {
-		throw ConfigException(ERROR_INVALID_CGI_PATH); // Missing semicolon
-	}
-	// construct full path
-	std::string fullPath = this->getLocationRoot();
-	if (fullPath.empty()) {
-		throw ConfigException(ERROR_INVALID_CGI_PATH);
-	}
-	if (fullPath[fullPath.length() - 1] != '/') {
-		fullPath += "/";
-	}
-	fullPath += cgiPath;
-	// Check if CGI path exists and is executable
-	struct stat file_stat;
-	if (stat(fullPath.c_str(), &file_stat) != 0) {
-		throw ConfigException(ERROR_INVALID_CGI_PATH);
-	}
-	if (!S_ISREG(file_stat.st_mode)) {
-		throw ConfigException(ERROR_INVALID_CGI_PATH);
-	}
-	if (access(fullPath.c_str(), X_OK) != 0) {
-		throw ConfigException(ERROR_INVALID_CGI_PATH);
-	}
-	std::string *result = new std::string(cgiPath);
-	return result;
-}
-
-// getters <3
-std::string LocationConfig::getLocationName() const {
-	return (_locationName);
-}
-std::string LocationConfig::getLocationRoot() const {
-	return (_locationRoot);
-}
-std::string LocationConfig::getLocationIndex() const {
-	return (_index);
-}
-std::vector<std::string> LocationConfig::getLocationAllowedMethods() const {
-	return (_allowedMethods);
-}
-bool LocationConfig::getLocationAutoIndex() const {
-	return (_autoindex);
-}
-std::string LocationConfig::getLocationCgiPath() const {
-	return (_cgiPath);
+/**
+ * Parses and validates CGI script path configuration
+ * Constructs full path, validates file existence and execute permissions
+ * @param tokens Configuration tokens
+ * @param i Current position in tokens, updated to position after semicolon
+ * @return CGI script path (relative to location root)
+ */
+std::string LocationConfig::getCgiPath(const std::vector<std::string>& tokens, size_t& i) {
+    if (i + 1 >= tokens.size()) {
+        throw ConfigException(ERROR_INVALID_CGI_PATH);
+    }
+    
+    i++; // Skip "cgi_path"
+    
+    std::string cgiPath = tokens[i];
+    if (cgiPath.empty()) {
+        throw ConfigException(ERROR_INVALID_CGI_PATH);
+    }
+    
+    // Construct full path for validation
+    std::string fullPath = _locationRoot;
+    if (!fullPath.empty() && fullPath[fullPath.length() - 1] != '/') {
+        fullPath += "/";
+    }
+    fullPath += cgiPath;
+    
+    PathValidator::validateExecutable(fullPath);
+    
+    i++;
+    TokenHelper::expectSemicolon(tokens, i);
+    return cgiPath;
 }
