@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:08 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/09/19 16:03:09 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/09/19 17:03:35 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@
 #include <unistd.h>
 #include "ServerConfig.hpp"
 
-// Configuration constants to replace magic numbers
+// Configuration constants
 namespace ConfigConstants {
     const int DEFAULT_PORT = 8080;
     const int MIN_PORT = 1024;
@@ -40,7 +40,7 @@ private:
     std::vector<std::string> _tokens;
     std::set<std::string> _nonServerSections;
 
-    // Core tokenization functions - separated for clarity and maintainability
+    // Core tokenization functions
     std::vector<std::string> tokenizeBasic(std::ifstream& file);
     std::vector<std::string> processBraces(const std::vector<std::string>& rawTokens);
     void validateBraces(const std::vector<std::string>& tokens);
@@ -48,7 +48,7 @@ private:
     // Main tokenization coordinator
     std::vector<std::string> getTokensFromFile(std::ifstream& file);
     
-    // Server parsing functions - now return by value instead of dynamic allocation
+    // Server parsing functions
     std::vector<ServerConfig> parseServers(const std::vector<std::string>& tokens);
     ServerConfig parseServerBlock(const std::vector<std::string>& tokens, size_t& i,
                                  std::set<std::string>& serverNames,
@@ -130,43 +130,15 @@ public:
 // Utility classes for common validation and parsing tasks
 class PathValidator {
 public:
-    /**
-     * Validates file existence, type, and permissions
-     * Ensures path points to a readable regular file
-     */
     static void validateFile(const std::string& path, bool checkRead = true);
-    
-    /**
-     * Validates directory existence, type, and permissions
-     * Ensures path points to a readable directory
-     */
     static void validateDirectory(const std::string& path, bool checkRead = true);
-    
-    /**
-     * Validates executable file permissions
-     * Ensures file exists and has execute permissions
-     */
     static void validateExecutable(const std::string& path);
 };
 
 class TokenHelper {
 public:
-    /**
-     * Validates and consumes semicolon token
-     * Advances index past semicolon or throws exception
-     */
     static void expectSemicolon(const std::vector<std::string>& tokens, size_t& i);
-    
-    /**
-     * Validates HTTP method names
-     * Returns true for GET, POST, DELETE
-     */
     static bool isValidHttpMethod(const std::string& method);
-    
-    /**
-     * Validates file extensions for index files
-     * Returns true for supported web and CGI file extensions
-     */
     static bool isValidFileExtension(const std::string& filename);
 };
 

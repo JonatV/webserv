@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:12 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/09/19 16:09:52 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/09/19 17:03:49 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ private:
     bool _autoindex;
     std::string _cgiPath;
 
-    // Parsing functions - return by value, take const references
+    // Parsing functions
     std::string getIndex(const std::vector<std::string>& tokens, size_t i, const std::string& rootPath);
     std::vector<std::string> getAllowedMethods(const std::vector<std::string>& tokens, size_t& i);
     std::string getRoot(const std::vector<std::string>& tokens, size_t& i);
@@ -41,7 +41,7 @@ public:
     LocationConfig(const std::string& root);
     ~LocationConfig();
 
-    // Getters - keeping original verbose names for compatibility
+    // Getters
     const std::string& getLocationName() const { return _locationName; }
     const std::string& getLocationRoot() const { return _locationRoot; }
     const std::string& getLocationIndex() const { return _index; }

@@ -624,47 +624,43 @@ bool method::checkPermissions(const std::string& type, const LocationConfig* loc
 }
 
 std::string method::handleCGI(const std::string& request, const std::string& cgiFilePath, int port) {
-    (void)port; // pour éviter warning unused parameter
+    (void)port;
     
-    // Parse la requête HTTP pour extraire les infos
+    // Parse HTTP request
     std::istringstream requestStream(request);
     std::string requestLine;
     std::getline(requestStream, requestLine);
     
-    // Extraire méthode, path et query string
     std::istringstream lineStream(requestLine);
     std::string method, fullPath, protocol;
     lineStream >> method >> fullPath >> protocol;
     
+    // Extract path and query string
     std::string path, queryString;
     size_t questionMarkPos = fullPath.find('?');
-	if (questionMarkPos != std::string::npos) {
-		path = fullPath.substr(0, questionMarkPos);
-		queryString = fullPath.substr(questionMarkPos + 1);
-	} else {
-		path = fullPath;
-		queryString = "";
-	}
+    if (questionMarkPos != std::string::npos) {
+        path = fullPath.substr(0, questionMarkPos);
+        queryString = fullPath.substr(questionMarkPos + 1);
+    } else {
+        path = fullPath;
+    }
     
-    // Parse les headers HTTP
+    // Parse HTTP headers
     std::map<std::string, std::string> headers;
     std::string headerLine;
-    while (std::getline(requestStream, headerLine) && headerLine != "\r" && headerLine != "") {
+    while (std::getline(requestStream, headerLine) && !headerLine.empty() && headerLine != "\r") {
         if (!headerLine.empty() && headerLine[headerLine.length() - 1] == '\r') 
-            headerLine.erase(headerLine.length() - 1);
+    		headerLine.erase(headerLine.length() - 1);
         
         size_t colonPos = headerLine.find(':');
         if (colonPos != std::string::npos) {
-            std::string headerName = headerLine.substr(0, colonPos);
-            std::string headerValue = headerLine.substr(colonPos + 2); // +2 pour ": "
-            headers[headerName] = headerValue;
+            headers[headerLine.substr(0, colonPos)] = headerLine.substr(colonPos + 2);
         }
     }
     
-    // Extraire le body pour POST
+    // Extract request body for POST
     std::string requestBody;
     if (method == "POST") {
-        // Le body est tout ce qui reste après les headers
         std::string bodyLine;
         while (std::getline(requestStream, bodyLine)) {
             if (!requestBody.empty()) requestBody += "\n";
@@ -672,13 +668,13 @@ std::string method::handleCGI(const std::string& request, const std::string& cgi
         }
     }
     
-    // Check if the CGI script exists and is executable
+    // Verify CGI script exists and is executable
     struct stat statbuf;
     if (stat(cgiFilePath.c_str(), &statbuf) != 0 || !(statbuf.st_mode & S_IXUSR)) {
         throw std::runtime_error(ERROR_404_RESPONSE);
     }
 
-    // Create pipes for stdin, stdout
+    // Create pipes
     int stdinPipe[2], stdoutPipe[2];
     if (pipe(stdinPipe) == -1 || pipe(stdoutPipe) == -1) {
         throw std::runtime_error(ERROR_500_RESPONSE);
@@ -691,16 +687,14 @@ std::string method::handleCGI(const std::string& request, const std::string& cgi
         throw std::runtime_error(ERROR_500_RESPONSE);
     }
 
-    if (pid == 0) { // Child process
-        // Redirect stdin and stdout
+    if (pid == 0) {
+        // Child process: setup and execute CGI script
         dup2(stdinPipe[0], STDIN_FILENO);
         dup2(stdoutPipe[1], STDOUT_FILENO);
-
-        // Close all pipe ends
         close(stdinPipe[0]); close(stdinPipe[1]);
         close(stdoutPipe[0]); close(stdoutPipe[1]);
 
-        // Set up environment variables
+        // Set CGI environment variables
         setenv("REQUEST_METHOD", method.c_str(), 1);
         setenv("QUERY_STRING", queryString.c_str(), 1);
         setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
@@ -710,57 +704,45 @@ std::string method::handleCGI(const std::string& request, const std::string& cgi
         setenv("SERVER_NAME", "localhost", 1);
         setenv("SERVER_PORT", to_string(port).c_str(), 1);
         
-        // Headers spécifiques pour POST
         if (method == "POST") {
             std::string contentType = headers.count("Content-Type") ? headers["Content-Type"] : "application/x-www-form-urlencoded";
-            std::string contentLength = to_string(requestBody.length());
-            
             setenv("CONTENT_TYPE", contentType.c_str(), 1);
-            setenv("CONTENT_LENGTH", contentLength.c_str(), 1);
+            setenv("CONTENT_LENGTH", to_string(requestBody.length()).c_str(), 1);
         } else {
             setenv("CONTENT_LENGTH", "0", 1);
         }
         
-        // Ajouter les headers HTTP comme variables d'environnement
+        // Add HTTP headers as environment variables
         for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); ++it) {
-            std::string envName = "HTTP_" + it->first;
-            // Remplacer - par _ et mettre en majuscules
-            for (size_t i = 0; i < envName.length(); ++i) {
-                if (envName[i] == '-') envName[i] = '_';
-                envName[i] = std::toupper(envName[i]);
-            }
-            setenv(envName.c_str(), it->second.c_str(), 1);
-        }
+			std::string envName = "HTTP_" + it->first;
+			for (size_t i = 0; i < envName.length(); ++i) {
+				if (envName[i] == '-') envName[i] = '_';
+				envName[i] = std::toupper(envName[i]);
+			}
+			setenv(envName.c_str(), it->second.c_str(), 1);
+		}
 
-        // Execute the CGI script
         execl(cgiFilePath.c_str(), cgiFilePath.c_str(), NULL);
-
-        // Si execl échoue
         perror("execl failed");
         exit(1);
         
-    } else { // Parent process
-        close(stdinPipe[0]);  // On n'a pas besoin de lire depuis stdin
-        close(stdoutPipe[1]); // On n'a pas besoin d'écrire vers stdout
+    } else {
+        // Parent process: handle I/O and collect output
+        close(stdinPipe[0]);
+        close(stdoutPipe[1]);
 
-        // Pour POST, envoyer le body au script via stdin
+        // Send POST data if present
         if (method == "POST" && !requestBody.empty()) {
-            ssize_t bytesWritten = write(stdinPipe[1], requestBody.c_str(), requestBody.length());
-            if (bytesWritten == -1) {
-                perror("Failed to write POST data to CGI script");
-            }
+            write(stdinPipe[1], requestBody.c_str(), requestBody.length());
         }
-        close(stdinPipe[1]); // Fermer stdin après écriture
+        close(stdinPipe[1]);
 
-        // Read output from the CGI script
-        char buffer[4096];
+        // Read CGI output with timeout
         std::string output;
-        ssize_t bytesRead;
-        
-        // Timeout pour éviter de rester bloqué
+        char buffer[4096];
         fd_set readfds;
         struct timeval timeout;
-        timeout.tv_sec = 10;  // 10 secondes timeout
+        timeout.tv_sec = 10;
         timeout.tv_usec = 0;
         
         while (true) {
@@ -768,107 +750,79 @@ std::string method::handleCGI(const std::string& request, const std::string& cgi
             FD_SET(stdoutPipe[0], &readfds);
             
             int selectResult = select(stdoutPipe[0] + 1, &readfds, NULL, NULL, &timeout);
-            if (selectResult == -1) {
-                break; // Erreur
-            } else if (selectResult == 0) {
-                break; // Timeout
-            }
+            if (selectResult <= 0) break;
             
-            bytesRead = read(stdoutPipe[0], buffer, sizeof(buffer) - 1);
+            ssize_t bytesRead = read(stdoutPipe[0], buffer, sizeof(buffer) - 1);
             if (bytesRead <= 0) break;
             
-            buffer[bytesRead] = '\0';
             output.append(buffer, bytesRead);
         }
         
         close(stdoutPipe[0]);
-
-        // Wait for the child process to finish
-        int status;
-        waitpid(pid, &status, 0);
+        waitpid(pid, NULL, 0);
         
         if (output.empty()) {
             throw std::runtime_error(ERROR_500_RESPONSE);
         }
         
-        // Parse CGI response (headers + body)
-        std::string cgiResponse = parseCGIResponse(output);
-        return cgiResponse;
+        return parseCGIResponse(output);
     }
 }
 
-// Fonction helper pour parser la réponse CGI
 std::string method::parseCGIResponse(const std::string& cgiOutput) {
-    // Séparer headers et body
+    // Find header/body separator
     size_t headerEndPos = cgiOutput.find("\r\n\r\n");
     if (headerEndPos == std::string::npos) {
         headerEndPos = cgiOutput.find("\n\n");
         if (headerEndPos == std::string::npos) {
-            // Pas de séparation headers/body trouvée, traiter comme du HTML pur
-            std::string response = "HTTP/1.1 200 OK\r\n";
-            response += "Content-Type: text/html\r\n";
-            response += "Content-Length: " + to_string(cgiOutput.length()) + "\r\n\r\n";
-            response += cgiOutput;
-            return response;
+            // No headers found, treat as pure HTML
+            return "HTTP/1.1 200 OK\r\n"
+                   "Content-Type: text/html\r\n"
+                   "Content-Length: " + to_string(cgiOutput.length()) + "\r\n\r\n" + cgiOutput;
         }
-        headerEndPos += 2; // pour "\n\n"
+        headerEndPos += 2;
     } else {
-        headerEndPos += 4; // pour "\r\n\r\n"
+        headerEndPos += 4;
     }
     
     std::string cgiHeaders = cgiOutput.substr(0, headerEndPos);
     std::string cgiBody = cgiOutput.substr(headerEndPos);
     
-    // Construire la réponse HTTP finale
+    // Build HTTP response
     std::string httpResponse = "HTTP/1.1 200 OK\r\n";
+    bool hasContentType = false;
     
-    // Ajouter les headers du CGI (s'il y en a)
     if (!cgiHeaders.empty()) {
-        // Si le CGI a envoyé des headers, les inclure
         std::istringstream headerStream(cgiHeaders);
         std::string headerLine;
-        bool hasContentType = false;
         
         while (std::getline(headerStream, headerLine)) {
             if (headerLine.empty() || headerLine == "\r") continue;
             
             if (!headerLine.empty() && headerLine[headerLine.length() - 1] == '\r') 
-                headerLine.erase(headerLine.length() - 1);
+    			headerLine.erase(headerLine.length() - 1);
             
             if (headerLine.find("Content-Type:") != std::string::npos) {
                 hasContentType = true;
             }
-            
             httpResponse += headerLine + "\r\n";
         }
-        
-        // Si pas de Content-Type spécifié, ajouter par défaut
-        if (!hasContentType) {
-            httpResponse += "Content-Type: text/html\r\n";
-        }
-    } else {
+    }
+    
+    if (!hasContentType) {
         httpResponse += "Content-Type: text/html\r\n";
     }
     
-    // Ajouter Content-Length
-    httpResponse += "Content-Length: " + to_string(cgiBody.length()) + "\r\n\r\n";
-    
-    // Ajouter le body
-    httpResponse += cgiBody;
-    
+    httpResponse += "Content-Length: " + to_string(cgiBody.length()) + "\r\n\r\n" + cgiBody;
     return httpResponse;
 }
 
-bool method::isCGIScript(const std::string& filePath)
-{
-	if (filePath.find(".py") != std::string::npos) return true;
-	if (filePath.find(".sh") != std::string::npos) return true;
-	if (filePath.find(".pl") != std::string::npos) return true;
-	if (filePath.find(".cgi") != std::string::npos) return true;
-	
-	struct stat statbuf;
-	if (stat(filePath.c_str(), &statbuf) == 0)
-		return (statbuf.st_mode & S_IXUSR);
-	
-	return false;
+bool method::isCGIScript(const std::string& filePath) {
+    // Check file extension
+    if (filePath.find(".py") != std::string::npos || filePath.find(".sh") != std::string::npos)
+        return true;
+    
+    // Check if file is executable
+    struct stat statbuf;
+    return (stat(filePath.c_str(), &statbuf) == 0 && (statbuf.st_mode & S_IXUSR));
 }

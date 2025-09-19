@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/09/19 16:05:00 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/09/19 17:04:36 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@ std::string LocationConfig::getIndex(const std::vector<std::string>& tokens, siz
         throw ConfigException(ERROR_INVALID_INDEX_FILES);
     }
     
-    i++; // Skip "index"
+    i++;
     std::string indexName = tokens[i];
     
     if (indexName.empty() || !TokenHelper::isValidFileExtension(indexName)) {
@@ -47,7 +47,6 @@ std::string LocationConfig::getIndex(const std::vector<std::string>& tokens, siz
         throw ConfigException(ERROR_INVALID_INDEX_FILES);
     }
     
-    // Construct full path for validation
     std::string fullPath = rootPath;
     if (!rootPath.empty() && rootPath[rootPath.length() - 1] != '/') {
         fullPath += "/";
@@ -68,8 +67,7 @@ std::string LocationConfig::getIndex(const std::vector<std::string>& tokens, siz
 std::vector<std::string> LocationConfig::getAllowedMethods(const std::vector<std::string>& tokens, size_t& i) {
     std::vector<std::string> methods;
     
-    i++; // Skip "allowed_methods"
-    
+    i++;
     while (i < tokens.size() && tokens[i] != ";") {
         if (!TokenHelper::isValidHttpMethod(tokens[i])) {
             throw ConfigException(ERROR_INVALID_ALLOWED_METHODS);
@@ -97,8 +95,7 @@ std::string LocationConfig::getRoot(const std::vector<std::string>& tokens, size
     if (i + 1 >= tokens.size()) {
         throw ConfigException(ERROR_INVALID_ROOT_PATH);
     }
-    
-    i++; // Skip "root"
+    i++;
     
     std::string path = tokens[i];
     if (path.empty()) {
@@ -123,8 +120,7 @@ bool LocationConfig::getAutoIndex(const std::vector<std::string>& tokens, size_t
     if (i + 1 >= tokens.size()) {
         throw ConfigException(ERROR_INVALID_AUTOINDEX);
     }
-    
-    i++; // Skip "autoindex"
+    i++;
     
     bool autoindex;
     if (tokens[i] == "on") {
@@ -151,15 +147,13 @@ std::string LocationConfig::getCgiPath(const std::vector<std::string>& tokens, s
     if (i + 1 >= tokens.size()) {
         throw ConfigException(ERROR_INVALID_CGI_PATH);
     }
-    
-    i++; // Skip "cgi_path"
+    i++;
     
     std::string cgiPath = tokens[i];
     if (cgiPath.empty()) {
         throw ConfigException(ERROR_INVALID_CGI_PATH);
     }
     
-    // Construct full path for validation
     std::string fullPath = _locationRoot;
     if (!fullPath.empty() && fullPath[fullPath.length() - 1] != '/') {
         fullPath += "/";

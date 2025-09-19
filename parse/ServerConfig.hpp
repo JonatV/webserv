@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/27 16:35:14 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/09/19 16:03:02 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/09/19 17:04:04 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@ private:
     std::map<int, std::string> _errorPages;
     std::map<std::string, LocationConfig> _locations;
 
-    // Parsing functions - now return by value and take const references
+    // Parsing functions
     std::vector<int> getPort(const std::vector<std::string>& tokens, size_t& i);
     std::string getHost(const std::vector<std::string>& tokens, size_t& i);
     std::string getRoot(const std::vector<std::string>& tokens, size_t& i);

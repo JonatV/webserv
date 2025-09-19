@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:17 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/09/19 16:04:39 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/09/19 17:06:05 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,6 @@ std::vector<int> ServerConfig::getPort(const std::vector<std::string>& tokens, s
     }
     
     i++; // Skip "listen"
-    
     size_t startPos = i;
     while (i < tokens.size() && tokens[i] != ";") {
         i++;
@@ -80,7 +79,6 @@ std::string ServerConfig::getHost(const std::vector<std::string>& tokens, size_t
     }
     
     i++; // Skip "host"
-    
     std::string host = ConfigConstants::DEFAULT_HOST;
     if (tokens[i] != ";") {
         host = tokens[i];
@@ -107,7 +105,6 @@ std::string ServerConfig::getRoot(const std::vector<std::string>& tokens, size_t
     }
     
     i++; // Skip "root"
-    
     std::string path = tokens[i];
     if (path.empty()) {
         throw ConfigException(ERROR_INVALID_ROOT_PATH);
@@ -133,7 +130,6 @@ ssize_t ServerConfig::getClientBodyLimit(const std::vector<std::string>& tokens,
     }
     
     i++; // Skip "client_max_body_size"
-    
     ssize_t limit = std::atol(tokens[i].c_str());
     if (limit <= 0) {
         throw ConfigException(ERROR_INVALID_CLIENT_MAX_BODY_SIZE);
@@ -157,7 +153,6 @@ std::string ServerConfig::getServerName(const std::vector<std::string>& tokens, 
     }
     
     i++; // Skip "server_name"
-    
     std::string name = tokens[i];
     if (name.empty()) {
         throw ConfigException(ERROR_INVALID_SERVER_NAME);
@@ -184,7 +179,6 @@ std::map<std::string, LocationConfig> ServerConfig::getLocationConfig(const std:
     
     std::string path = tokens[i + 1];
     i += 2; // Skip "location" and path
-    
     LocationConfig locationConfig(_root);
     locationConfig._locationName = path;
 
@@ -192,7 +186,6 @@ std::map<std::string, LocationConfig> ServerConfig::getLocationConfig(const std:
         throw LocationConfig::ConfigException(LocationConfig::ERROR_INVALID_LOCATION_BLOCK);
     }
     i++; // Skip opening brace
-
     // Parse location block directives
     while (i < tokens.size() && tokens[i] != "}") {
         if (tokens[i] == "index") {

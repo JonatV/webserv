@@ -6,7 +6,7 @@
 /*   By: eschmitz <eschmitz@student.s19.be>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/31 14:03:10 by eschmitz          #+#    #+#             */
-/*   Updated: 2025/09/19 16:06:14 by eschmitz         ###   ########.fr       */
+/*   Updated: 2025/09/19 17:02:12 by eschmitz         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,10 +23,6 @@ Config::Config() {
 
 Config::~Config() {
 }
-
-// ============================================================================
-// UTILITY CLASS IMPLEMENTATIONS
-// ============================================================================
 
 /**
  * Validates that a file exists, is readable, and is a regular file
@@ -113,7 +109,6 @@ bool TokenHelper::isValidHttpMethod(const std::string& method) {
 bool TokenHelper::isValidFileExtension(const std::string& filename) {
     static std::set<std::string> validExtensions;
     
-    // Initialize set on first call (C++98 compatible)
     if (validExtensions.empty()) {
         validExtensions.insert(".html");
         validExtensions.insert(".css");
@@ -133,10 +128,6 @@ bool TokenHelper::isValidFileExtension(const std::string& filename) {
     std::string extension = filename.substr(dotPos);
     return validExtensions.find(extension) != validExtensions.end();
 }
-
-// ============================================================================
-// TOKENIZATION FUNCTIONS
-// ============================================================================
 
 /**
  * Extracts basic tokens from configuration file
@@ -182,7 +173,6 @@ std::vector<std::string> Config::processBraces(const std::vector<std::string>& r
     for (size_t i = 0; i < rawTokens.size(); i++) {
         std::string word = rawTokens[i];
         
-        // Handle opening braces
         size_t bracePos = word.find('{');
         while (bracePos != std::string::npos) {
             if (bracePos > 0) {
@@ -193,7 +183,6 @@ std::vector<std::string> Config::processBraces(const std::vector<std::string>& r
             bracePos = word.find('{');
         }
         
-        // Handle closing braces
         bracePos = word.find('}');
         while (bracePos != std::string::npos) {
             if (bracePos > 0) {
@@ -204,7 +193,6 @@ std::vector<std::string> Config::processBraces(const std::vector<std::string>& r
             bracePos = word.find('}');
         }
         
-        // Handle semicolons
         if (!word.empty() && word[word.length() - 1] == ';') {
             word.erase(word.length() - 1);
             if (!word.empty()) {
@@ -257,10 +245,6 @@ std::vector<std::string> Config::getTokensFromFile(std::ifstream& file) {
     return tokens;
 }
 
-// ============================================================================
-// BLOCK PARSING FUNCTIONS
-// ============================================================================
-
 /**
  * Skips over complete configuration blocks
  * Used to ignore non-server sections like 'http', 'events', etc.
@@ -308,7 +292,6 @@ size_t Config::skipBlock(const std::vector<std::string>& tokens, size_t startPos
 bool Config::isNonServerSection(const std::string& token) {
     static std::set<std::string> knownSections;
     
-    // Initialize set on first call (C++98 compatible)
     if (knownSections.empty()) {
         knownSections.insert("http");
         knownSections.insert("stream");
@@ -320,10 +303,6 @@ bool Config::isNonServerSection(const std::string& token) {
     
     return knownSections.find(token) != knownSections.end();
 }
-
-// ============================================================================
-// MAIN PARSING FUNCTIONS
-// ============================================================================
 
 /**
  * Parses all server configuration blocks from tokenized input
@@ -373,7 +352,7 @@ ServerConfig Config::parseServerBlock(const std::vector<std::string>& tokens, si
         throw ServerConfig::ConfigException(ServerConfig::ERROR_INVALID_SERVER_BLOCK);
     }
     
-    i += 2; // Skip "server" and "{"
+    i += 2;
     ServerConfig server;
     bool hasPort = false;
 
@@ -465,8 +444,7 @@ void Config::parseErrorPage(const std::vector<std::string>& tokens, size_t& i,
     if (i + 2 >= tokens.size()) {
         throw ServerConfig::ConfigException(ServerConfig::ERROR_INVALID_SERVER_BLOCK);
     }
-    
-    i++; // Skip "error_page"
+    i++;
     
     int errorCode = std::atoi(tokens[i].c_str());
     if (errorCode < 100 || errorCode > 599) {
